@@ -40,8 +40,7 @@ class _LoginInterfaceState extends State<LoginInterface> {
     final result = await ApiService.login(
       email: _emailController.text,
       password: _passwordController.text,
-    );//aaaaaaaaaaaaa
-
+    );
     if (result['success']) {
       // Verify role matches selected role
       if (result['data']['role'] == _selectedRole) {
