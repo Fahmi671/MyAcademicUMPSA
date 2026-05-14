@@ -2,6 +2,45 @@ import 'package:flutter/material.dart';
 import '../../Config/api.dart';
 import '../../Domain/Subject.dart';
 
+// Color palette
+class AppColors {
+  static const Color appBarBg = Color(0xFF1A5F5F);
+  static const Color appBarText = Colors.white;
+  static const Color pageBg = Color(0xFFF5F5F5);
+  static const Color cardBg = Colors.white;
+  static const Color cardBorder = Color(0xFFE0E0E0);
+  static const Color labelText = Color(0xFF1A1A1A);
+  static const Color successGreen = Color(0xFF4CAF50);
+  static const Color errorRed = Colors.red;
+  static const Color inputBorder = Color(0xFF1A5F5F);
+}
+
+// Text styles
+class AppTextStyles {
+  static const TextStyle appBarTitle = TextStyle(
+    color: AppColors.appBarText,
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+  );
+  
+  static const TextStyle sectionTitle = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: AppColors.labelText,
+  );
+  
+  static const TextStyle fieldLabel = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: AppColors.labelText,
+  );
+  
+  static const TextStyle labTitle = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
+  );
+}
+
 class Lecturer {
   final int lecturerId;
   final String lecturerName;
@@ -56,28 +95,26 @@ class RegistrarEditSubject extends StatefulWidget {
 }
 
 class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
+  // Controllers
   final _subjectCodeController = TextEditingController();
   final _subjectNameController = TextEditingController();
   final _creditHoursController = TextEditingController();
 
+  // State
   bool _isLoading = false;
   bool _isLoadingLecturers = true;
   String? _errorMessage;
   String? _successMessage;
 
+  // Data
   List<Lecturer> _lecturers = [];
   final Set<int> _initialSubjectIds = {};
   final Map<int, Map<String, Set<String>>> _occupiedLecturerSlots = {};
-
   final List<String> _days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   final List<String> _times = [
-    '08:00 - 10:00',
-    '10:00 - 12:00',
-    '12:00 - 14:00',
-    '14:00 - 16:00',
-    '16:00 - 18:00',
+    '08:00 - 10:00', '10:00 - 12:00', '12:00 - 14:00',
+    '14:00 - 16:00', '16:00 - 18:00',
   ];
-
   List<SectionData> _sections = [];
 
   @override
@@ -87,6 +124,7 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     fetchLecturers();
   }
 
+  // Initialize from passed subjects
   void seedFromSubjects() {
     final base = widget.subjects.first;
     _subjectCodeController.text = base.subjectCode;
@@ -121,6 +159,7 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     }).toList();
   }
 
+  // Fetch lecturers and occupied slots
   Future<void> fetchLecturers() async {
     try {
       final lecturerResult = await ApiService.getLecturers();
@@ -152,9 +191,8 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
 
         setState(() {
           _lecturers = lecturersData.map((e) => Lecturer.fromJson(e)).toList();
-          _occupiedLecturerSlots
-            ..clear()
-            ..addAll(occupied);
+          _occupiedLecturerSlots.clear();
+          _occupiedLecturerSlots.addAll(occupied);
           _isLoadingLecturers = false;
         });
       } else {
@@ -171,46 +209,34 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     }
   }
 
+  // Add new section
   void addSection() {
     setState(() {
       final nextSection = (_sections.map((e) => e.sectionNumber).fold<int>(0, (a, b) => a > b ? a : b)) + 1;
       _sections.add(
         SectionData(
           sectionNumber: nextSection,
-          labs: [
-            LabData(
-              lab: 'A',
-              day: 'Monday',
-              time: '08:00 - 10:00',
-              quota: '',
-              room: '',
-            ),
-          ],
+          labs: [LabData(lab: 'A', day: 'Monday', time: '08:00 - 10:00', quota: '', room: '')],
         ),
       );
     });
   }
 
+  // Add lab to section
   void addLab(SectionData section) {
     setState(() {
       final nextLab = String.fromCharCode(65 + section.labs.length);
-      section.labs.add(
-        LabData(
-          lab: nextLab,
-          day: 'Monday',
-          time: '08:00 - 10:00',
-          quota: '',
-          room: '',
-        ),
-      );
+      section.labs.add(LabData(lab: nextLab, day: 'Monday', time: '08:00 - 10:00', quota: '', room: ''));
     });
   }
 
+  // Remove lab from section
   void removeLab(SectionData section, LabData lab) {
     if (section.labs.length == 1) return;
     setState(() => section.labs.remove(lab));
   }
 
+  // Get available times for lecturer
   List<String> availableTimesFor(LabData targetLab) {
     if (targetLab.lecturerId == null) return _times;
 
@@ -232,6 +258,7 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     return _times.where((t) => !taken.contains(t)).toList();
   }
 
+  // Get available days for lecturer
   List<String> availableDaysFor(LabData targetLab) {
     if (targetLab.lecturerId == null) return _days;
     return _days.where((day) {
@@ -248,6 +275,7 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     }).toList();
   }
 
+  // Check for duplicate slots
   bool hasDuplicateLecturerSlot() {
     final seen = <String>{};
     for (final section in _sections) {
@@ -261,6 +289,7 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     return false;
   }
 
+  // Save subjects
   Future<void> handleSave() async {
     if (_subjectNameController.text.trim().isEmpty || _creditHoursController.text.trim().isEmpty) {
       setState(() => _errorMessage = 'Please fill in subject name and credit hours');
@@ -362,30 +391,8 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A5F5F),
-        elevation: 2,
-        title: const Text('Edit Subject', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: Image.asset(
-                'assets/images/logo.png',
-                height: 32,
-                width: 32,
-                errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Colors.white70, size: 28),
-              ),
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.pageBg,
+      appBar: buildAppBar(),
       body: _successMessage != null
           ? buildSuccessOverlay()
           : SingleChildScrollView(
@@ -393,36 +400,14 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_errorMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.error_outline, color: Colors.red, size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
+                  if (_errorMessage != null) buildErrorMessage(),
                   buildTextField('Subject Code', _subjectCodeController, enabled: false),
                   const SizedBox(height: 12),
                   buildTextField('Subject Name *', _subjectNameController),
                   const SizedBox(height: 12),
                   buildTextField('Credit Hours *', _creditHoursController, keyboardType: TextInputType.number),
                   const SizedBox(height: 16),
-                  const Text('Sections', style: TextStyle(fontWeight: FontWeight.w700)),
+                  const Text('Sections', style: AppTextStyles.sectionTitle),
                   const SizedBox(height: 8),
                   ..._sections.map(buildSectionCard),
                   const SizedBox(height: 10),
@@ -435,19 +420,93 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     );
   }
 
+  // App bar
+  PreferredSizeWidget buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.appBarBg,
+      elevation: 2,
+      title: const Text('Edit Subject', style: AppTextStyles.appBarTitle),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: AppColors.appBarText),
+        onPressed: () => Navigator.pop(context),
+      ),
+      centerTitle: true,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: Center(
+            child: Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              width: 32,
+              errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Colors.white70, size: 28),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Error message
+  Widget buildErrorMessage() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.errorRed.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.errorRed.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.errorRed, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(_errorMessage!, style: const TextStyle(color: AppColors.errorRed)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Text field
+  Widget buildTextField(String label, TextEditingController controller, 
+      {bool enabled = true, TextInputType keyboardType = TextInputType.text}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTextStyles.fieldLabel),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          enabled: enabled && !_isLoading,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppColors.inputBorder, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Section card
   Widget buildSectionCard(SectionData section) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Section ${section.sectionNumber}', style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text('Section ${section.sectionNumber}', 
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.inputBorder)),
           const SizedBox(height: 10),
           ...section.labs.map((lab) => buildLabCard(section, lab)),
           buildAddLabButton(section),
@@ -456,6 +515,7 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     );
   }
 
+  // Lab card
   Widget buildLabCard(SectionData section, LabData lab) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -463,13 +523,13 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
       decoration: BoxDecoration(
         color: const Color(0xFFF9F9F9),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Text('Lab ${lab.lab}', style: const TextStyle(fontWeight: FontWeight.w700)),
+              Text('Lab ${lab.lab}', style: AppTextStyles.labTitle),
               const Spacer(),
               if (section.labs.length > 1)
                 TextButton(
@@ -479,17 +539,12 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
             ],
           ),
           if (_isLoadingLecturers)
-            const Padding(
-              padding: EdgeInsets.all(8),
-              child: CircularProgressIndicator(),
-            )
+            const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator())
           else
             buildDropdown<int>(
               label: 'Lecturer',
               value: lab.lecturerId,
-              items: _lecturers
-                  .map((l) => DropdownMenuItem<int>(value: l.lecturerId, child: Text(l.toString())))
-                  .toList(),
+              items: _lecturers.map((l) => DropdownMenuItem<int>(value: l.lecturerId, child: Text(l.toString()))).toList(),
               onChanged: (v) => setState(() {
                 lab.lecturerId = v;
                 final times = availableTimesFor(lab);
@@ -528,6 +583,7 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     );
   }
 
+  // Dropdown
   Widget buildDropdown<T>({
     required String label,
     required T? value,
@@ -537,7 +593,7 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
         const SizedBox(height: 6),
         DropdownButtonFormField<T>(
           value: value,
@@ -552,13 +608,15 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     );
   }
 
-  Widget buildInput(String label, String value, ValueChanged<String> onChanged, [TextInputType type = TextInputType.text]) {
+  // Input field
+  Widget buildInput(String label, String value, ValueChanged<String> onChanged, 
+      [TextInputType type = TextInputType.text]) {
     final controller = TextEditingController(text: value);
     controller.selection = TextSelection.fromPosition(TextPosition(offset: controller.text.length));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -574,24 +632,7 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     );
   }
 
-  Widget buildTextField(String label, TextEditingController controller, {bool enabled = true, TextInputType keyboardType = TextInputType.text}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          enabled: enabled && !_isLoading,
-          keyboardType: keyboardType,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        ),
-      ],
-    );
-  }
-
+  // Add lab button
   Widget buildAddLabButton(SectionData section) {
     return SizedBox(
       width: double.infinity,
@@ -603,6 +644,7 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     );
   }
 
+  // Add section button
   Widget buildAddSectionButton() {
     return SizedBox(
       width: double.infinity,
@@ -614,20 +656,22 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
     );
   }
 
+  // Save button
   Widget buildSaveButton() {
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton(
         onPressed: _isLoading ? null : handleSave,
-        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A5F5F)),
+        style: ElevatedButton.styleFrom(backgroundColor: AppColors.appBarBg),
         child: _isLoading
             ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
-            : const Text('Save', style: TextStyle(color: Colors.white)),
+            : const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
       ),
     );
   }
 
+  // Success overlay
   Widget buildSuccessOverlay() {
     return Center(
       child: Container(
@@ -635,38 +679,21 @@ class _RegistrarEditSubjectState extends State<RegistrarEditSubject> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 12,
-              spreadRadius: 2,
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 12, spreadRadius: 2)],
         ),
-        child: const Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
+            Container(
               width: 80,
               height: 80,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Color(0xFF4CAF50),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.check, color: Colors.white, size: 48),
-              ),
+              decoration: const BoxDecoration(color: AppColors.successGreen, shape: BoxShape.circle),
+              child: const Icon(Icons.check, color: Colors.white, size: 48),
             ),
-            SizedBox(height: 16),
-            Text(
-              'Successfully\nEdited',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
+            const SizedBox(height: 16),
+            const Text('Successfully\nEdited',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black)),
           ],
         ),
       ),

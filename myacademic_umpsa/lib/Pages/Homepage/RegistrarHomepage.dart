@@ -246,7 +246,7 @@ class _RegistrarHomepageState extends State<RegistrarHomepage> {
     setState(() => _isLoggingOut = true);
 
     try {
-      final result = await ApiService.logout();
+      await ApiService.logout();
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();

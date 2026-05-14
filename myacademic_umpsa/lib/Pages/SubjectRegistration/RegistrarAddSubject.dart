@@ -1,6 +1,46 @@
 import 'package:flutter/material.dart';
 import '../../Config/api.dart';
 
+// Color palette
+class AppColors {
+  static const Color appBarBg = Color(0xFF1A5F5F);
+  static const Color appBarText = Colors.white;
+  static const Color pageBg = Color(0xFFF5F5F5);
+  static const Color cardBg = Colors.white;
+  static const Color cardBorder = Color(0xFFE0E0E0);
+  static const Color labelText = Color(0xFF1A1A1A);
+  static const Color successGreen = Color(0xFF4CAF50);
+  static const Color errorRed = Colors.red;
+  static const Color inputBorder = Color(0xFF1A5F5F);
+}
+
+// Text styles
+class AppTextStyles {
+  static const TextStyle appBarTitle = TextStyle(
+    color: AppColors.appBarText,
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+  );
+  
+  static const TextStyle sectionTitle = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: AppColors.labelText,
+  );
+  
+  static const TextStyle fieldLabel = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    color: AppColors.labelText,
+  );
+  
+  static const TextStyle labTitle = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: Color(0xFF2196F3),
+  );
+}
+
 class Lecturer {
   final int lecturerId;
   final String lecturerName;
@@ -59,27 +99,25 @@ class RegistrarAddSubject extends StatefulWidget {
 }
 
 class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
+  // Controllers
   final _subjectCodeController = TextEditingController();
   final _subjectNameController = TextEditingController();
   final _creditHoursController = TextEditingController();
 
+  // State
   bool _isLoading = false;
   bool _isLoadingLecturers = true;
   String? _errorMessage;
   String? _successMessage;
 
+  // Data
   List<Lecturer> _lecturers = [];
   final Map<int, Map<String, Set<String>>> _occupiedLecturerSlots = {};
-
-  final List<String> _days = [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-  ];
-
+  final List<String> _days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   final List<String> _times = [
     '08:00 - 10:00', '10:00 - 12:00', '12:00 - 14:00',
     '14:00 - 16:00', '16:00 - 18:00',
   ];
-
   List<SectionData> _sections = [
     SectionData(sectionNumber: 1, labs: [LabData(lab: 'A')]),
   ];
@@ -98,6 +136,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     super.dispose();
   }
 
+  // Fetch lecturers and occupied slots
   Future<void> fetchLecturers() async {
     try {
       final lecturerResult = await ApiService.getLecturers();
@@ -123,12 +162,9 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
         }
 
         setState(() {
-          _lecturers = lecturersData
-              .map((e) => Lecturer.fromJson(e))
-              .toList();
-          _occupiedLecturerSlots
-            ..clear()
-            ..addAll(occupied);
+          _lecturers = lecturersData.map((e) => Lecturer.fromJson(e)).toList();
+          _occupiedLecturerSlots.clear();
+          _occupiedLecturerSlots.addAll(occupied);
           _isLoadingLecturers = false;
         });
       } else {
@@ -145,6 +181,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     }
   }
 
+  // Add new section
   void addSection() {
     setState(() {
       int nextSection = _sections.length + 1;
@@ -155,6 +192,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     });
   }
 
+  // Add lab to section
   void addLab(SectionData section) {
     setState(() {
       String nextLab = String.fromCharCode(65 + section.labs.length);
@@ -162,6 +200,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     });
   }
 
+  // Get available times for lecturer
   List<String> availableTimesFor(LabData targetLab) {
     if (targetLab.lecturerId == null) return _times;
 
@@ -183,6 +222,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     return _times.where((t) => !taken.contains(t)).toList();
   }
 
+  // Get available days for lecturer
   List<String> availableDaysFor(LabData targetLab) {
     if (targetLab.lecturerId == null) return _days;
     return _days.where((day) {
@@ -194,6 +234,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     }).toList();
   }
 
+  // Check for duplicate slots
   bool hasDuplicateLecturerSlot() {
     final seen = <String>{};
     for (final section in _sections) {
@@ -207,6 +248,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     return false;
   }
 
+  // Save subjects
   Future<void> handleSave() async {
     if (_subjectCodeController.text.isEmpty ||
         _subjectNameController.text.isEmpty ||
@@ -227,7 +269,6 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
         throw Exception('Duplicate lecturer day/time is not allowed');
       }
 
-      // Build all subjects
       List<Map<String, dynamic>> subjects = [];
 
       for (var section in _sections) {
@@ -251,7 +292,6 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
         }
       }
 
-      // Send bulk request
       final result = await ApiService.createBulkSubjects(subjects: subjects);
 
       if (result['success']) {
@@ -282,30 +322,8 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A5F5F),
-        elevation: 2,
-        title: const Text('Add Subject', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: Image.asset(
-                'assets/images/logo.png',
-                height: 32,
-                width: 32,
-                errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Colors.white70, size: 28),
-              ),
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.pageBg,
+      appBar: buildAppBar(),
       body: _successMessage != null
           ? buildSuccessOverlay()
           : SingleChildScrollView(
@@ -313,28 +331,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_errorMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.error_outline,
-                              color: Colors.red, size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(_errorMessage!,
-                                style: const TextStyle(color: Colors.red)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                  if (_errorMessage != null) buildErrorMessage(),
                   buildTextField('Subject Code *', _subjectCodeController),
                   const SizedBox(height: 16),
                   buildTextField('Subject Name *', _subjectNameController),
@@ -342,11 +339,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
                   buildTextField('Credit Hours *', _creditHoursController,
                       keyboardType: TextInputType.number),
                   const SizedBox(height: 24),
-                  const Text('Sections',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1A1A))),
+                  const Text('Sections', style: AppTextStyles.sectionTitle),
                   const SizedBox(height: 12),
                   ..._sections.map(buildSectionCard),
                   const SizedBox(height: 12),
@@ -360,16 +353,61 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     );
   }
 
+  // App bar
+  PreferredSizeWidget buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.appBarBg,
+      elevation: 2,
+      title: const Text('Add Subject', style: AppTextStyles.appBarTitle),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: AppColors.appBarText),
+        onPressed: () => Navigator.pop(context),
+      ),
+      centerTitle: true,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: Center(
+            child: Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              width: 32,
+              errorBuilder: (_, _, _) => const Icon(Icons.shield, color: Colors.white70, size: 28),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Error message
+  Widget buildErrorMessage() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.errorRed.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.errorRed.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.errorRed, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(_errorMessage!, style: const TextStyle(color: AppColors.errorRed)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Text field
   Widget buildTextField(String label, TextEditingController controller,
       {TextInputType keyboardType = TextInputType.text}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A))),
+        Text(label, style: AppTextStyles.fieldLabel),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -379,8 +417,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                  color: Color(0xFF1A5F5F), width: 2),
+              borderSide: const BorderSide(color: AppColors.inputBorder, width: 2),
             ),
           ),
         ),
@@ -388,23 +425,21 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     );
   }
 
+  // Section card
   Widget buildSectionCard(SectionData section) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Section ${section.sectionNumber}',
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A5F5F))),
+          Text('Section ${section.sectionNumber}', 
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.inputBorder)),
           const SizedBox(height: 14),
           ...section.labs.map((lab) => buildLabCard(lab, section)),
           const SizedBox(height: 12),
@@ -414,6 +449,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     );
   }
 
+  // Lab card
   Widget buildLabCard(LabData lab, SectionData section) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -421,32 +457,23 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
       decoration: BoxDecoration(
         color: const Color(0xFFFAFAFA),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Lab ${lab.lab}',
-              style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2196F3))),
+          Text('Lab ${lab.lab}', style: AppTextStyles.labTitle),
           const SizedBox(height: 12),
           if (_isLoadingLecturers)
             const SizedBox(
               height: 48,
-              child: Center(
-                  child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(Color(0xFF1A5F5F)))),
+              child: Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(AppColors.inputBorder))),
             )
           else
             buildDropdown(
               label: 'Lecturer *',
               value: lab.lecturerId,
-              items: _lecturers
-                  .map((l) =>
-                  DropdownMenuItem(value: l.lecturerId, child: Text(l.toString())))
-                  .toList(),
+              items: _lecturers.map((l) => DropdownMenuItem(value: l.lecturerId, child: Text(l.toString()))).toList(),
               onChanged: (v) => setState(() {
                 lab.lecturerId = v;
                 final times = availableTimesFor(lab);
@@ -459,9 +486,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
           buildDropdown(
             label: 'Day *',
             value: availableDaysFor(lab).contains(lab.day) ? lab.day : null,
-            items: availableDaysFor(lab)
-                .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                .toList(),
+            items: availableDaysFor(lab).map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
             onChanged: (v) => setState(() {
               final days = availableDaysFor(lab);
               lab.day = v ?? (days.isNotEmpty ? days.first : 'Monday');
@@ -475,9 +500,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
           buildDropdown(
             label: 'Time *',
             value: availableTimesFor(lab).contains(lab.time) ? lab.time : null,
-            items: availableTimesFor(lab)
-                .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                .toList(),
+            items: availableTimesFor(lab).map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
             onChanged: (v) => setState(() => lab.time = v ?? ''),
           ),
           const SizedBox(height: 12),
@@ -489,6 +512,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     );
   }
 
+  // Dropdown
   Widget buildDropdown<T>({
     required String label,
     required T? value,
@@ -498,22 +522,18 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w700)),
+        Text(label, style: AppTextStyles.fieldLabel),
         const SizedBox(height: 8),
         DropdownButtonFormField<T>(
           value: value,
           items: items,
           onChanged: onChanged,
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                  color: Color(0xFF1A5F5F), width: 2),
+              borderSide: const BorderSide(color: AppColors.inputBorder, width: 2),
             ),
           ),
         ),
@@ -521,14 +541,13 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     );
   }
 
+  // Lab input
   Widget buildLabInput(String label, Function(String) onChanged,
       [TextInputType type = TextInputType.text]) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w700)),
+        Text(label, style: AppTextStyles.fieldLabel),
         const SizedBox(height: 8),
         TextField(
           keyboardType: type,
@@ -538,8 +557,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                  color: Color(0xFF1A5F5F), width: 2),
+              borderSide: const BorderSide(color: AppColors.inputBorder, width: 2),
             ),
           ),
         ),
@@ -547,6 +565,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
     );
   }
 
+  // Add lab button
   Widget buildAddLabButton(SectionData section) {
     return SizedBox(
       width: double.infinity,
@@ -558,12 +577,12 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         icon: const Icon(Icons.add, color: Color(0xFF2196F3)),
-        label: const Text('Add Lab',
-            style: TextStyle(color: Color(0xFF2196F3))),
+        label: const Text('Add Lab', style: TextStyle(color: Color(0xFF2196F3))),
       ),
     );
   }
 
+  // Add section button
   Widget buildAddSectionButton() {
     return SizedBox(
       width: double.infinity,
@@ -574,13 +593,13 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        icon: const Icon(Icons.add, color: Color(0xFF4CAF50)),
-        label: const Text('Add Section',
-            style: TextStyle(color: Color(0xFF4CAF50))),
+        icon: const Icon(Icons.add, color: AppColors.successGreen),
+        label: const Text('Add Section', style: TextStyle(color: AppColors.successGreen)),
       ),
     );
   }
 
+  // Save button
   Widget buildSaveButton() {
     return SizedBox(
       width: double.infinity,
@@ -588,27 +607,21 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
       child: ElevatedButton(
         onPressed: _isLoading ? null : handleSave,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1A5F5F),
+          backgroundColor: AppColors.appBarBg,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: _isLoading
             ? const SizedBox(
                 height: 20,
                 width: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor:
-                        AlwaysStoppedAnimation(Colors.white)),
+                child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
               )
-            : const Text('Save',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600)),
+            : const Text('Save', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
       ),
     );
   }
 
+  // Success overlay
   Widget buildSuccessOverlay() {
     return Center(
       child: Container(
@@ -616,13 +629,7 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 12,
-              spreadRadius: 2,
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 12, spreadRadius: 2)],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -630,19 +637,13 @@ class _RegistrarAddSubjectState extends State<RegistrarAddSubject> {
             Container(
               width: 80,
               height: 80,
-              decoration: const BoxDecoration(
-                color: Color(0xFF4CAF50),
-                shape: BoxShape.circle,
-              ),
+              decoration: const BoxDecoration(color: AppColors.successGreen, shape: BoxShape.circle),
               child: const Icon(Icons.check, color: Colors.white, size: 48),
             ),
             const SizedBox(height: 16),
             const Text('Successfully\nAdded',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black)),
           ],
         ),
       ),
