@@ -1,4 +1,4 @@
-package com.example.myacademic_umpsa
+package com.example.frontend
 
 import io.flutter.embedding.android.FlutterActivity
 
