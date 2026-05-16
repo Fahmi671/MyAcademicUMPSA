@@ -7,7 +7,10 @@ use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\RegistrationScheduleController;
 use App\Http\Controllers\SubjectEnrollmentController;
-
+use App\Http\Controllers\CoCurriculumActivityController;
+use App\Http\Controllers\ParticipationController;
+use App\Http\Controllers\CreditClaimController;
+use App\Http\Controllers\PusatAdabController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -48,4 +51,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/student/available-subjects', [SubjectEnrollmentController::class, 'availableSubjects']);
     Route::post('/enrollments', [SubjectEnrollmentController::class, 'store']);
     Route::delete('/enrollments/{enrollment_id}', [SubjectEnrollmentController::class, 'destroy']);
+
+    // Co-Curriculum Activity routes
+    Route::get('/activities', [CoCurriculumActivityController::class, 'index']);
+    Route::post('/activities', [CoCurriculumActivityController::class, 'store']);
+    Route::get('/activities/{activity_id}', [CoCurriculumActivityController::class, 'show']);
+    Route::put('/activities/{activity_id}', [CoCurriculumActivityController::class, 'update']);
+    Route::delete('/activities/{activity_id}', [CoCurriculumActivityController::class, 'destroy']);
+
+    // Participation routes
+    Route::get('/student/participations', [ParticipationController::class, 'myParticipations']);
+    Route::post('/participations', [ParticipationController::class, 'store']);
+    Route::delete('/participations/{participation_id}', [ParticipationController::class, 'destroy']);
+
+    // Credit Claim routes
+    Route::get('/student/claims', [CreditClaimController::class, 'myClaims']);
+    Route::post('/claims', [CreditClaimController::class, 'store']);
+    Route::get('/claims/pending', [CreditClaimController::class, 'pendingClaims']);
+    Route::put('/claims/{claim_id}/review', [CreditClaimController::class, 'review']);
+
+    // Pusat Adab routes
+    Route::get('/pusat-adab/profile', [PusatAdabController::class, 'profile']);
 });

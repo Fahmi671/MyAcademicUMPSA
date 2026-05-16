@@ -11,6 +11,7 @@ import 'Pages/SubjectRegistration/RegistrarRegistrationSchedule.dart';
 import 'Pages/SubjectRegistration/StudentSubject.dart';
 import 'Pages/SubjectRegistration/LecturerSubjectList.dart';
 import 'Pages/SubjectRegistration/LecturerSubjectDetail.dart';
+import 'Pages/CoCurriculumRegistration/StudentActivityList.dart';
 import 'Pages/Auth/LoginInterface.dart';
 import 'Config/api.dart';
 import 'Domain/Subject.dart'; // ← Just import normally
@@ -25,6 +26,7 @@ void main() async {
   if (token != null) {
     ApiService.setToken(token);
   }
+
   runApp(MyApp(isLoggedIn: token != null, role: role));
 }
 
@@ -60,6 +62,7 @@ class MyApp extends StatelessWidget {
         '/student-homepage': (ctx) => const StudentHomepage(),
         '/lecturer-homepage': (ctx) => const LecturerHomepage(),
         '/student-subject': (ctx) => const StudentSubject(),
+        '/student-activities': (ctx) => const StudentActivityList(),
         '/lecturer-subject-list': (ctx) => const LecturerSubjectList(),
         '/lecturer-subject-detail': (ctx) {
           final subjectCode = ModalRoute.of(ctx)?.settings.arguments as String?;
