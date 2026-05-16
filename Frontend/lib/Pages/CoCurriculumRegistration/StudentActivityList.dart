@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../Config/api.dart';
 import '../../Domain/CocurriculumActivity.dart';
 import 'StudentActivityDetail.dart';
 
@@ -14,50 +15,45 @@ class _StudentActivityListState extends State<StudentActivityList> {
   String selectedCampus = 'All';
   String selectedDate = 'All';
 
-  final List<CocurriculumActivity> activities = [
-    CocurriculumActivity(
-      activityId: 'A001',
-      pusatAdabId: 'PA001',
-      moduleCode: 'HQS3032',
-      moduleName: 'MEMANAH',
-      campus: 'PEKAN',
-      venue: 'Lap. Sasar Memanah, UMPSA Pekan',
-      activityDate: '12/08/2026',
-      activityTime: '8:00 AM - 5:00 PM',
-      capacity: 40,
-      availableSlots: 8,
-      status: 'Open',
-      description: 'Archery co-curriculum activity for students.',
-    ),
-    CocurriculumActivity(
-      activityId: 'A002',
-      pusatAdabId: 'PA001',
-      moduleCode: 'HQS3022',
-      moduleName: 'KAYAK',
-      campus: 'PEKAN',
-      venue: 'Tasik',
-      activityDate: '22/06/2026',
-      activityTime: '8:00 AM - 2:00 PM',
-      capacity: 25,
-      availableSlots: 5,
-      status: 'Open',
-      description: 'Kayaking outdoor activity for students.',
-    ),
-    CocurriculumActivity(
-      activityId: 'A003',
-      pusatAdabId: 'PA002',
-      moduleCode: 'HQS3024',
-      moduleName: 'DIGITAL CITIZENSHIP',
-      campus: 'GAMBANG',
-      venue: 'Dewan UMPSA Gambang',
-      activityDate: '20/08/2026',
-      activityTime: '9:00 AM - 12:00 PM',
-      capacity: 30,
-      availableSlots: 0,
-      status: 'Full',
-      description: 'Digital citizenship co-curriculum activity.',
-    ),
-  ];
+  List<CocurriculumActivity> activities = [];
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchActivities();
+  }
+
+  Future<void> fetchActivities() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    final result = await ApiService.getActivities();
+
+    if (result['success'] == true) {
+      final List data = result['data'] ?? [];
+
+      setState(() {
+        activities = data
+            .map((item) => CocurriculumActivity.fromJson(item))
+            .toList();
+
+        selectedModule = 'All Modules';
+        selectedCampus = 'All';
+        selectedDate = 'All';
+
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        errorMessage = result['message'] ?? 'Failed to load activities';
+        isLoading = false;
+      });
+    }
+  }
 
   List<CocurriculumActivity> get filteredActivities {
     return activities.where((activity) {
@@ -74,12 +70,38 @@ class _StudentActivityListState extends State<StudentActivityList> {
     }).toList();
   }
 
+  List<String> get moduleItems {
+    return [
+      'All Modules',
+      ...activities
+          .map((activity) => '${activity.moduleCode} ${activity.moduleName}')
+          .toSet()
+          .toList(),
+    ];
+  }
+
+  List<String> get campusItems {
+    return [
+      'All',
+      ...activities.map((activity) => activity.campus).toSet().toList(),
+    ];
+  }
+
+  List<String> get dateItems {
+    return [
+      'All',
+      ...activities.map((activity) => activity.activityDate).toSet().toList(),
+    ];
+  }
+
   Widget buildDropdown({
     required String label,
     required String value,
     required List<String> items,
     required Function(String?) onChanged,
   }) {
+    final safeValue = items.contains(value) ? value : items.first;
+
     return Row(
       children: [
         SizedBox(
@@ -100,12 +122,16 @@ class _StudentActivityListState extends State<StudentActivityList> {
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: value,
+                value: safeValue,
                 isExpanded: true,
                 items: items.map((item) {
                   return DropdownMenuItem(
                     value: item,
-                    child: Text(item, style: const TextStyle(fontSize: 12)),
+                    child: Text(
+                      item,
+                      style: const TextStyle(fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   );
                 }).toList(),
                 onChanged: onChanged,
@@ -122,6 +148,147 @@ class _StudentActivityListState extends State<StudentActivityList> {
       context,
       MaterialPageRoute(
         builder: (context) => StudentActivityDetail(activity: activity),
+      ),
+    );
+  }
+
+  Widget buildActivityTable() {
+    return Container(
+      color: Colors.white,
+      child: Column(
+        children: [
+          Container(
+            color: const Color(0xFFEFEFEF),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: const Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'Module',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Campus',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Date',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Status',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Action',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: filteredActivities.length,
+              itemBuilder: (context, index) {
+                final activity = filteredActivities[index];
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xFFE0E0E0)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          '${activity.moduleCode}\n${activity.moduleName}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          activity.campus,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 9),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          activity.activityDate,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 9),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          activity.status,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: activity.status.toLowerCase() == 'open'
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Center(
+                          child: SizedBox(
+                            height: 24,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.grey,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                              onPressed: () => goToActivityDetail(activity),
+                              child: const Text(
+                                'View',
+                                style: TextStyle(fontSize: 9),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -148,12 +315,7 @@ class _StudentActivityListState extends State<StudentActivityList> {
             buildDropdown(
               label: 'MODULE',
               value: selectedModule,
-              items: const [
-                'All Modules',
-                'HQS3032 MEMANAH',
-                'HQS3022 KAYAK',
-                'HQS3024 DIGITAL CITIZENSHIP',
-              ],
+              items: moduleItems,
               onChanged: (value) {
                 setState(() => selectedModule = value!);
               },
@@ -162,7 +324,7 @@ class _StudentActivityListState extends State<StudentActivityList> {
             buildDropdown(
               label: 'CAMPUS',
               value: selectedCampus,
-              items: const ['All', 'PEKAN', 'GAMBANG'],
+              items: campusItems,
               onChanged: (value) {
                 setState(() => selectedCampus = value!);
               },
@@ -171,14 +333,12 @@ class _StudentActivityListState extends State<StudentActivityList> {
             buildDropdown(
               label: 'DATE',
               value: selectedDate,
-              items: const ['All', '12/08/2026', '22/06/2026', '20/08/2026'],
+              items: dateItems,
               onChanged: (value) {
                 setState(() => selectedDate = value!);
               },
             ),
-
             const SizedBox(height: 12),
-
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: blue,
@@ -190,148 +350,48 @@ class _StudentActivityListState extends State<StudentActivityList> {
               },
               child: const Text('Search'),
             ),
-
             const SizedBox(height: 16),
-
             Expanded(
-              child: Container(
-                color: Colors.white,
-                child: Column(
-                  children: [
-                    Container(
-                      color: const Color(0xFFEFEFEF),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: const Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              'Module',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Text(
-                              'Campus',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Text(
-                              'Date',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Text(
-                              'Status',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Text(
-                              'Action',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: filteredActivities.length,
-                        itemBuilder: (context, index) {
-                          final activity = filteredActivities[index];
-
-                          return Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: const BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(color: Color(0xFFE0E0E0)),
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: blue),
+                    )
+                  : errorMessage != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: Text(
-                                    '${activity.moduleCode}\n${activity.moduleName}',
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: blue,
+                                  foregroundColor: Colors.white,
                                 ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    activity.campus,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(fontSize: 9),
-                                  ),
+                                onPressed: fetchActivities,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : filteredActivities.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No co-curriculum activities available.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    activity.activityDate,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(fontSize: 9),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    activity.status,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      color: activity.status == 'Open'
-                                          ? Colors.green
-                                          : Colors.red,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Center(
-                                    child: SizedBox(
-                                      height: 24,
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.grey,
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                                        ),
-                                        onPressed: () => goToActivityDetail(activity),
-                                        child: const Text(
-                                          'View',
-                                          style: TextStyle(fontSize: 9),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                              ),
+                            )
+                          : buildActivityTable(),
             ),
           ],
         ),

@@ -529,7 +529,41 @@ class ApiService {
       return {'success': false, 'message': 'Error: $e'};
     }
   }
+  
+  // ════════════════════════════════════════════════════════════
+  // CO-CURRICULUM ACTIVITIES
+  // ════════════════════════════════════════════════════════════
+  static Future<Map<String, dynamic>> getActivities() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/activities'),
+        headers: getHeaders(),
+      );
 
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getActivity(String activityId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/activities/$activityId'),
+        headers: getHeaders(),
+      );
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
+  }
   // LECTURER
   static Future<Map<String, dynamic>> getLecturerAssignedSubjects() async {
     try {

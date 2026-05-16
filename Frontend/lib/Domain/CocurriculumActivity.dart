@@ -43,21 +43,4 @@ class CocurriculumActivity {
       description: json['Description']?.toString() ?? '',
     );
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'Activity_ID': activityId,
-      'PusatAdab_ID': pusatAdabId,
-      'Module_Code': moduleCode,
-      'Module_Name': moduleName,
-      'Campus': campus,
-      'Venue': venue,
-      'Activity_Date': activityDate,
-      'Activity_Time': activityTime,
-      'Capacity': capacity,
-      'Available_Slots': availableSlots,
-      'Status': status,
-      'Description': description,
-    };
-  }
 }
