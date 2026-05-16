@@ -38,6 +38,7 @@ class SubjectEnrollmentController extends Controller
     private function isRegistrationOpenNowForYear(?int $yearOfStudy): bool
     {
         if (!$yearOfStudy) {
+            error_log("REGISTRATION CHECK FAILED: Year of Study is NULL");
             return false;
         }
 
@@ -45,12 +46,32 @@ class SubjectEnrollmentController extends Controller
         $today = $now->toDateString();
         $currentTime = $now->format('H:i:s');
 
-        return RegistrationSchedule::whereDate('Start_Date', '<=', $today)
+        $schedule = RegistrationSchedule::whereDate('Start_Date', '<=', $today)
             ->whereDate('End_Date', '>=', $today)
             ->where('Year_of_Study', $yearOfStudy)
-            ->where('Start_Time', '<=', $currentTime)
-            ->where('End_Time', '>=', $currentTime)
-            ->exists();
+            ->first();
+
+        if (!$schedule) {
+            error_log("REGISTRATION CLOSED: No matching schedule found");
+            return false;
+        }
+
+        // Check time only on START and END dates
+        $isStartDay = $schedule->Start_Date === $today;
+        $isEndDay = $schedule->End_Date === $today;
+
+        if ($isStartDay && $currentTime < $schedule->Start_Time) {
+            error_log("REGISTRATION CLOSED: Before start time on start day");
+            return false;
+        }
+
+        if ($isEndDay && $currentTime > $schedule->End_Time) {
+            error_log("REGISTRATION CLOSED: After end time on end day");
+            return false;
+        }
+
+        error_log("REGISTRATION OPEN: Schedule valid - $today between {$schedule->Start_Date} and {$schedule->End_Date}");
+        return true;
     }
 
     // Parse "HH:mm - HH:mm" range into start/end strings.
@@ -273,6 +294,7 @@ class SubjectEnrollmentController extends Controller
                 'registration_open' => $registrationOpen,
                 'registration_message' => $registrationOpen ? null : self::REGISTRATION_CLOSED_MESSAGE,
             ], 200);
+            
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

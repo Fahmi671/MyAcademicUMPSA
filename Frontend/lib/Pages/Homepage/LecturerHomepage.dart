@@ -2,6 +2,79 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../Config/api.dart';
 
+class AppColors {
+  static const Color appBarBackground = Color(0xFF1AAFC0);
+  static const Color appBarTitle = Colors.white;
+  static const Color appBarIcon = Colors.white;
+  static const Color pageBackground = Color(0xFFF5F5F5);
+  static const Color welcomeCardBackground = Color(0xFF31B9C9);
+  static const Color welcomeCardTitle = Colors.white;
+  static const Color welcomeCardSubtitle = Colors.white70;
+  static const Color menuLabelText = Color(0xFF1A1A1A);
+  static const Color menuCardBackground = Colors.white;
+  static const Color menuCardBorder = Color(0xFFE0E0E0);
+  static const Color menuCardShadow = Color(0x14000000);
+  static const Color menuCardText = Color(0xFF1A1A1A);
+  static const Color calendarLabelText = Color(0xFF1A1A1A);
+  static const Color calendarBackground = Colors.white;
+  static const Color calendarBorder = Color(0xFFE0E0E0);
+  static const Color calendarGridText = Color(0xFF666666);
+  static const Color calendarTodayBg = Color(0xFF1AAFC0);
+  static const Color calendarTodayText = Colors.white;
+}
+
+class AppTextStyles {
+  static const TextStyle appBarTitle = TextStyle(
+    color: AppColors.appBarTitle,
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.5,
+  );
+
+  static const TextStyle welcomeTitle = TextStyle(
+    color: AppColors.welcomeCardTitle,
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.3,
+  );
+
+  static const TextStyle welcomeSubtitle = TextStyle(
+    color: AppColors.welcomeCardSubtitle,
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+  );
+
+  static const TextStyle sectionLabel = TextStyle(
+    color: AppColors.menuLabelText,
+    fontSize: 14,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.3,
+  );
+
+  static const TextStyle menuItemText = TextStyle(
+    color: AppColors.menuCardText,
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+  );
+
+  static const TextStyle calendarMonthYear = TextStyle(
+    color: AppColors.calendarGridText,
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+  );
+
+  static const TextStyle calendarDate = TextStyle(
+    color: AppColors.calendarGridText,
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+  );
+}
+
+class AppRoutes {
+  static const String lecturerHomepage = '/lecturer-homepage';
+  static const String lecturerSubjectList = '/lecturer-subject-list';
+}
+
 class LecturerHomepage extends StatefulWidget {
   const LecturerHomepage({super.key});
 
@@ -10,18 +83,21 @@ class LecturerHomepage extends StatefulWidget {
 }
 
 class _LecturerHomepageState extends State<LecturerHomepage> {
+  // State
   DateTime _selectedDate = DateTime.now();
   bool _isLoggingOut = false;
-  bool _isLoadingUser = true;
   String _userName = 'Loading...';
   String _userRole = 'Lecturer';
+  bool _isLoadingUser = true;
 
+  // Lifecycle
   @override
   void initState() {
     super.initState();
     fetchUserData();
   }
 
+  // Helper Methods
   String extractFirstName(String fullName) {
     fullName = fullName.trim();
     final lowerName = fullName.toLowerCase();
@@ -36,60 +112,62 @@ class _LecturerHomepageState extends State<LecturerHomepage> {
     } else if (bintiIndex != -1) {
       cutIndex = bintiIndex;
     }
-    return cutIndex == -1 ? fullName : fullName.substring(0, cutIndex).trim();
+
+    if (cutIndex != -1) {
+      return fullName.substring(0, cutIndex).trim();
+    }
+    return fullName;
   }
 
   Future<void> fetchUserData() async {
     try {
       final result = await ApiService.getCurrentUser();
+
       if (result['success'] && result['data'] != null) {
-        final fullName = result['data']['full_name'] ?? 'Lecturer';
-        final firstName = extractFirstName(fullName.toString());
-        if (mounted) {
-          setState(() {
-            _userName = firstName;
-            _userRole = 'Lecturer';
-            _isLoadingUser = false;
-          });
-        }
+        final fullName = result['data']['full_name'] ?? 'User';
+        final firstName = extractFirstName(fullName);
+
+        setState(() {
+          _userName = firstName;
+          _userRole = 'Lecturer';
+          _isLoadingUser = false;
+        });
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_name', firstName);
       } else {
-        await loadUserFromStorage();
+        loadUserFromStorage();
       }
-    } catch (_) {
-      await loadUserFromStorage();
+    } catch (e) {
+      print('Error fetching user: $e');
+      loadUserFromStorage();
     }
   }
 
   Future<void> loadUserFromStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedName = prefs.getString('user_name') ?? 'Lecturer';
+
       setState(() {
-        _userName = prefs.getString('user_name') ?? 'Lecturer';
+        _userName = savedName;
         _userRole = 'Lecturer';
+        _isLoadingUser = false;
+      });
+    } catch (e) {
+      print('Error loading user from storage: $e');
+      setState(() {
         _isLoadingUser = false;
       });
     }
   }
 
-  Future<void> performLogout() async {
-    setState(() => _isLoggingOut = true);
-    try {
-      await ApiService.logout();
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-      if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoggingOut = false);
-      }
-    }
+  // Navigation & Logout
+  void goToSubjectManagement() {
+    Navigator.pushNamed(context, AppRoutes.lecturerSubjectList);
   }
 
-  void handleLogout() {
+  Future<void> handleLogout() async {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -105,11 +183,65 @@ class _LecturerHomepageState extends State<LecturerHomepage> {
               Navigator.pop(ctx);
               performLogout();
             },
-            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              'Logout',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> performLogout() async {
+    setState(() => _isLoggingOut = true);
+
+    try {
+      await ApiService.logout();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/login',
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoggingOut = false);
+      }
+    }
+  }
+
+  // Calendar Methods
+  void previousMonth() {
+    setState(() {
+      _selectedDate = DateTime(
+        _selectedDate.year,
+        _selectedDate.month - 1,
+      );
+    });
+  }
+
+  void nextMonth() {
+    setState(() {
+      _selectedDate = DateTime(
+        _selectedDate.year,
+        _selectedDate.month + 1,
+      );
+    });
   }
 
   List<int> getCalendarDays() {
@@ -117,154 +249,339 @@ class _LecturerHomepageState extends State<LecturerHomepage> {
     final lastDay = DateTime(_selectedDate.year, _selectedDate.month + 1, 0);
     final daysInMonth = lastDay.day;
     final startingWeekday = firstDay.weekday;
-    final days = <int>[];
+
+    List<int> days = [];
     for (int i = 0; i < startingWeekday - 1; i++) {
       days.add(0);
     }
     for (int i = 1; i <= daysInMonth; i++) {
       days.add(i);
     }
+
     return days;
   }
 
+  // Build
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1AAFC0),
-        elevation: 2,
-        leading: IconButton(
-          icon: const Icon(Icons.logout, color: Colors.white),
-          onPressed: _isLoggingOut ? null : handleLogout,
-        ),
-        centerTitle: true,
-        title: const Column(
-          children: [
-            Text('MyAcademic', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
-            Text('UMPSA', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-          ],
-        ),
-      ),
+      backgroundColor: AppColors.pageBackground,
+      appBar: buildAppBar(),
       body: _isLoggingOut
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF1AAFC0)))
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.appBarBackground,
+              ),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF31B9C9),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _isLoadingUser ? 'Welcome Back!' : 'Welcome Back, $_userName!',
-                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(_userRole, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                      ],
-                    ),
-                  ),
+                  buildWelcomeCard(),
                   const SizedBox(height: 24),
-                  const Text('Menu', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => Navigator.pushNamed(context, '/lecturer-subject-list'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFE0E0E0)),
-                            ),
-                            child: const Column(
-                              children: [
-                                Icon(Icons.school, size: 36, color: Color(0xFF1AAFC0)),
-                                SizedBox(height: 8),
-                                Text('Subject\nManagement', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(child: SizedBox()),
-                    ],
-                  ),
+                  buildMenuSection(),
                   const SizedBox(height: 24),
-                  const Text('Calendar', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE0E0E0)),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            IconButton(
-                              onPressed: () => setState(() => _selectedDate = DateTime(_selectedDate.year, _selectedDate.month - 1)),
-                              icon: const Icon(Icons.arrow_back_ios, size: 16),
-                            ),
-                            Text(
-                              '${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                            ),
-                            IconButton(
-                              onPressed: () => setState(() => _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + 1)),
-                              icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        GridView.count(
-                          crossAxisCount: 7,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          children: getCalendarDays().map((day) {
-                            final now = DateTime.now();
-                            final isToday = day > 0 &&
-                                day == now.day &&
-                                _selectedDate.month == now.month &&
-                                _selectedDate.year == now.year;
-                            return Container(
-                              margin: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: isToday ? const Color(0xFF1AAFC0) : Colors.transparent,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  day > 0 ? '$day' : '',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: isToday ? Colors.white : const Color(0xFF666666),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ),
-                  ),
+                  buildCalendarSection(),
                 ],
               ),
             ),
+    );
+  }
+
+  // App Bar
+  PreferredSizeWidget buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.appBarBackground,
+      elevation: 2,
+      leading: IconButton(
+        icon: const Icon(Icons.logout, color: AppColors.appBarIcon),
+        onPressed: _isLoggingOut ? null : handleLogout,
+        tooltip: 'Logout',
+      ),
+      centerTitle: true,
+      title: const Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'MyAcademic',
+            style: TextStyle(
+              color: AppColors.appBarTitle,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            'UMPSA',
+            style: TextStyle(
+              color: AppColors.appBarTitle,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: Center(
+            child: Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              width: 32,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.shield,
+                color: Colors.white70,
+                size: 28,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Welcome Card
+  Widget buildWelcomeCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      decoration: BoxDecoration(
+        color: AppColors.welcomeCardBackground,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _isLoadingUser
+                ? 'Welcome Back!'
+                : 'Welcome Back, $_userName!',
+            style: AppTextStyles.welcomeTitle,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _userRole,
+            style: AppTextStyles.welcomeSubtitle,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Menu Section
+  Widget buildMenuSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Menu',
+          style: AppTextStyles.sectionLabel,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: buildMenuCard(
+                icon: Icons.school,
+                label: 'Subject\nManagement',
+                onTap: goToSubjectManagement,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget buildMenuCard({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.menuCardBackground,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.menuCardBorder, width: 1),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.menuCardShadow,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 40,
+              color: AppColors.appBarBackground,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.menuItemText,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Calendar Section
+  Widget buildCalendarSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Calendar',
+          style: AppTextStyles.sectionLabel,
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.calendarBackground,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.calendarBorder, width: 1),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.menuCardShadow,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              buildMonthYearNavigation(),
+              const SizedBox(height: 16),
+              buildCalendarGrid(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildMonthYearNavigation() {
+    final monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.arrow_back_ios, size: 16),
+          onPressed: previousMonth,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        ),
+        Row(
+          children: [
+            Text(
+              monthNames[_selectedDate.month - 1],
+              style: AppTextStyles.calendarMonthYear,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              _selectedDate.year.toString(),
+              style: AppTextStyles.calendarMonthYear,
+            ),
+          ],
+        ),
+        IconButton(
+          icon: const Icon(Icons.arrow_forward_ios, size: 16),
+          onPressed: nextMonth,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        ),
+      ],
+    );
+  }
+
+  Widget buildCalendarGrid() {
+    final days = getCalendarDays();
+    final weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    final today = DateTime.now();
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: weekDays
+              .map((day) => Expanded(
+                child: Center(
+                  child: Text(
+                    day,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF999999),
+                    ),
+                  ),
+                ),
+              ))
+              .toList(),
+        ),
+        const SizedBox(height: 8),
+        GridView.count(
+          crossAxisCount: 7,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: days.map((day) {
+            final isToday = day > 0 &&
+                day == today.day &&
+                _selectedDate.month == today.month &&
+                _selectedDate.year == today.year;
+
+            return Container(
+              margin: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isToday
+                    ? AppColors.calendarTodayBg
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Center(
+                child: Text(
+                  day > 0 ? day.toString() : '',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: isToday
+                        ? AppColors.calendarTodayText
+                        : (day > 0
+                            ? AppColors.calendarGridText
+                            : Colors.transparent),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }

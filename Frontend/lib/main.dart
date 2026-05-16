@@ -25,7 +25,6 @@ void main() async {
   if (token != null) {
     ApiService.setToken(token);
   }
-
   runApp(MyApp(isLoggedIn: token != null, role: role));
 }
 
