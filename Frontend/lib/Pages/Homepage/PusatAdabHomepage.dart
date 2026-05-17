@@ -11,7 +11,11 @@ class PusatAdabHomepage extends StatefulWidget {
 
 class _PusatAdabHomepageState extends State<PusatAdabHomepage> {
   bool _isLoggingOut = false;
-  String _userName = 'Pusat Adab';
+  String _userName = 'Anas';
+  DateTime _selectedDate = DateTime.now();
+
+  static const Color green = Color(0xFF3F8F3F);
+  static const Color darkGreen = Color(0xFF2E7D32);
 
   @override
   void initState() {
@@ -22,7 +26,7 @@ class _PusatAdabHomepageState extends State<PusatAdabHomepage> {
   Future<void> loadUserName() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _userName = prefs.getString('user_name') ?? 'Pusat Adab';
+      _userName = prefs.getString('user_name') ?? 'Anas';
     });
   }
 
@@ -67,45 +71,186 @@ class _PusatAdabHomepageState extends State<PusatAdabHomepage> {
     );
   }
 
+  List<int> getCalendarDays() {
+    final firstDay = DateTime(_selectedDate.year, _selectedDate.month, 1);
+    final lastDay = DateTime(_selectedDate.year, _selectedDate.month + 1, 0);
+    final daysInMonth = lastDay.day;
+    final startWeekday = firstDay.weekday % 7;
+
+    final days = <int>[];
+
+    for (int i = 0; i < startWeekday; i++) {
+      days.add(0);
+    }
+
+    for (int i = 1; i <= daysInMonth; i++) {
+      days.add(i);
+    }
+
+    return days;
+  }
+
+  void previousMonth() {
+    setState(() {
+      _selectedDate = DateTime(_selectedDate.year, _selectedDate.month - 1, 1);
+    });
+  }
+
+  void nextMonth() {
+    setState(() {
+      _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 1);
+    });
+  }
+
+  Widget buildMenuCard({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 90,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: const Color(0xFFD0D0D0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 3,
+                offset: const Offset(1, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 34, color: Colors.black),
+              const SizedBox(height: 6),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildCalendar() {
+  final days = getCalendarDays();
+
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color(0xFFE0E0E0)),
+    ),
+    child: Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              onPressed: previousMonth,
+              icon: const Icon(Icons.arrow_back_ios, size: 16),
+            ),
+            Text(
+              '${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            IconButton(
+              onPressed: nextMonth,
+              icon: const Icon(Icons.arrow_forward_ios, size: 16),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        GridView.count(
+          crossAxisCount: 7,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: days.map((day) {
+            final now = DateTime.now();
+
+            final isToday = day > 0 &&
+                day == now.day &&
+                _selectedDate.month == now.month &&
+                _selectedDate.year == now.year;
+
+            return Container(
+              margin: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isToday ? green : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Center(
+                child: Text(
+                  day > 0 ? '$day' : '',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isToday ? Colors.white : const Color(0xFF666666),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    ),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
-    const blue = Color(0xFF1F3E8A);
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
-        backgroundColor: blue,
+        backgroundColor: green,
         elevation: 2,
         leading: IconButton(
           icon: const Icon(Icons.logout, color: Colors.white),
           onPressed: _isLoggingOut ? null : handleLogout,
         ),
         centerTitle: true,
-        title: const Column(
-          children: [
-            Text(
-              'MyAcademic',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              'UMPSA',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+        title: const Text(
+          'Pusat Adab\nUMPSA',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            height: 1.2,
+          ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Image.asset(
+              'assets/images/umpsa_logo.png',
+              width: 38,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(Icons.account_balance, color: Colors.white);
+              },
+            ),
+          ),
+        ],
       ),
       body: _isLoggingOut
-          ? const Center(child: CircularProgressIndicator(color: blue))
+          ? const Center(child: CircularProgressIndicator(color: green))
           : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -113,11 +258,11 @@ class _PusatAdabHomepageState extends State<PusatAdabHomepage> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 20,
+                      vertical: 22,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2C4EA3),
-                      borderRadius: BorderRadius.circular(12),
+                      color: green,
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,65 +271,68 @@ class _PusatAdabHomepageState extends State<PusatAdabHomepage> {
                           'Welcome Back, $_userName!',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 5),
                         const Text(
                           'Pusat Adab',
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 18),
                   const Text(
                     'Menu',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.pushNamed(context, '/adab-manage-activity');
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: const Color(0xFFE0E0E0),
-                              ),
-                            ),
-                            child: const Column(
-                              children: [
-                                Icon(
-                                  Icons.event_note,
-                                  size: 36,
-                                  color: Color(0xFF1F3E8A),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Manage\nActivities',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                      buildMenuCard(
+                        icon: Icons.calendar_month,
+                        title: 'Co-Curriculum\nManagement',
+                        onTap: () {
+                          Navigator.pushNamed(context, '/adab-manage-activity');
+                        },
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(child: SizedBox()),
+                      buildMenuCard(
+                        icon: Icons.groups,
+                        title: 'Co-Curriculum\nAttendance',
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Co-Curriculum Attendance page will be added later.',
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Calendar',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  buildCalendar(),
                 ],
               ),
             ),

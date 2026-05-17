@@ -531,39 +531,124 @@ class ApiService {
   }
   
   // ════════════════════════════════════════════════════════════
-  // CO-CURRICULUM ACTIVITIES
-  // ════════════════════════════════════════════════════════════
-  static Future<Map<String, dynamic>> getActivities() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/activities'),
-        headers: getHeaders(),
-      );
+// CO-CURRICULUM ACTIVITIES
+// ════════════════════════════════════════════════════════════
+static Future<Map<String, dynamic>> getActivities() async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/activities'),
+      headers: getHeaders(),
+    );
 
-      return jsonDecode(response.body);
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error: $e',
-      };
-    }
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error: $e',
+    };
   }
+}
 
-  static Future<Map<String, dynamic>> getActivity(String activityId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/activities/$activityId'),
-        headers: getHeaders(),
-      );
+static Future<Map<String, dynamic>> createActivity({
+  required String activityId,
+  required String pusatAdabId,
+  required String moduleCode,
+  required String moduleName,
+  required String campus,
+  required String venue,
+  required String activityDate,
+  required String activityTime,
+  required int capacity,
+  required int availableSlots,
+  required String status,
+  required String description,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/activities'),
+      headers: getHeaders(),
+      body: jsonEncode({
+        'Activity_ID': activityId,
+        'PusatAdab_ID': pusatAdabId,
+        'Module_Code': moduleCode,
+        'Module_Name': moduleName,
+        'Campus': campus,
+        'Venue': venue,
+        'Activity_Date': activityDate,
+        'Activity_Time': activityTime,
+        'Capacity': capacity,
+        'Available_Slots': availableSlots,
+        'Status': status,
+        'Description': description,
+      }),
+    );
 
-      return jsonDecode(response.body);
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error: $e',
-      };
-    }
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error: $e',
+    };
   }
+}
+
+static Future<Map<String, dynamic>> updateActivity({
+  required String activityId,
+  required String pusatAdabId,
+  required String moduleCode,
+  required String moduleName,
+  required String campus,
+  required String venue,
+  required String activityDate,
+  required String activityTime,
+  required int capacity,
+  required int availableSlots,
+  required String status,
+  required String description,
+}) async {
+  try {
+    final response = await http.put(
+      Uri.parse('$baseUrl/activities/$activityId'),
+      headers: getHeaders(),
+      body: jsonEncode({
+        'PusatAdab_ID': pusatAdabId,
+        'Module_Code': moduleCode,
+        'Module_Name': moduleName,
+        'Campus': campus,
+        'Venue': venue,
+        'Activity_Date': activityDate,
+        'Activity_Time': activityTime,
+        'Capacity': capacity,
+        'Available_Slots': availableSlots,
+        'Status': status,
+        'Description': description,
+      }),
+    );
+
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error: $e',
+    };
+  }
+}
+
+static Future<Map<String, dynamic>> deleteActivity(String activityId) async {
+  try {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/activities/$activityId'),
+      headers: getHeaders(),
+    );
+
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error: $e',
+    };
+  }
+}
   // LECTURER
   static Future<Map<String, dynamic>> getLecturerAssignedSubjects() async {
     try {

@@ -13,6 +13,8 @@ import 'Pages/SubjectRegistration/StudentSubject.dart';
 import 'Pages/SubjectRegistration/LecturerSubjectList.dart';
 import 'Pages/SubjectRegistration/LecturerSubjectDetail.dart';
 import 'Pages/CoCurriculumRegistration/StudentActivityList.dart';
+import 'Pages/CoCurriculumRegistration/AdabManageActivity.dart';
+import 'Pages/CoCurriculumRegistration/AdabAddActivity.dart';
 import 'Pages/Auth/LoginInterface.dart';
 import 'Config/api.dart';
 import 'Domain/Subject.dart'; // ← Just import normally
@@ -62,10 +64,12 @@ class MyApp extends StatelessWidget {
         '/registrar-homepage': (ctx) => const RegistrarHomepage(),
         '/student-homepage': (ctx) => const StudentHomepage(),
         '/lecturer-homepage': (ctx) => const LecturerHomepage(),
-        '/pusat-adab-homepage': (context) => const PusatAdabHomepage(),
+        '/pusat-adab-homepage': (ctx) => const PusatAdabHomepage(),
         '/student-subject': (ctx) => const StudentSubject(),
         '/student-activities': (ctx) => const StudentActivityList(),
         '/lecturer-subject-list': (ctx) => const LecturerSubjectList(),
+        '/adab-manage-activity': (ctx) => const AdabManageActivity(),
+        '/adab-add-activity': (ctx) => const AdabAddActivity(),
         '/lecturer-subject-detail': (ctx) {
           final subjectCode = ModalRoute.of(ctx)?.settings.arguments as String?;
           return subjectCode != null ? LecturerSubjectDetail(subjectCode: subjectCode) : const LecturerSubjectList();
