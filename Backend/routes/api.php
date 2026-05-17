@@ -11,6 +11,7 @@ use App\Http\Controllers\CoCurriculumActivityController;
 use App\Http\Controllers\ParticipationController;
 use App\Http\Controllers\CreditClaimController;
 use App\Http\Controllers\PusatAdabController;
+use App\Http\Controllers\AttendanceController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -72,4 +73,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Pusat Adab routes
     Route::get('/pusat-adab/profile', [PusatAdabController::class, 'profile']);
+
+    // Attendance routes
+    Route::get('/attendance/sessions', [AttendanceController::class, 'getSessions']);
+    Route::post('/attendance/sessions', [AttendanceController::class, 'openSession']);
+    Route::put('/attendance/sessions/{session_id}/close', [AttendanceController::class, 'closeSession']);
+    Route::get('/attendance/sessions/{session_id}/records', [AttendanceController::class, 'getAttendanceList']);
+    Route::get('/student/classes', [AttendanceController::class, 'getStudentClasses']);
+    Route::post('/attendance/checkin', [AttendanceController::class, 'checkIn']);
 });

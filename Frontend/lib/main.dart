@@ -15,6 +15,12 @@ import 'Pages/SubjectRegistration/LecturerSubjectDetail.dart';
 import 'Pages/CoCurriculumRegistration/StudentActivityList.dart';
 import 'Pages/CoCurriculumRegistration/AdabManageActivity.dart';
 import 'Pages/CoCurriculumRegistration/AdabAddActivity.dart';
+import 'Pages/Attendance/StudentAttendanceList.dart';
+import 'Pages/Attendance/StudentCheckIn.dart';
+import 'Pages/Attendance/LecturerAttendanceSession.dart';
+import 'Pages/Attendance/LecturerAttendanceList.dart';
+import 'Pages/Attendance/PusatAdabAttendanceSession.dart';
+import 'Pages/Attendance/PusatAdabAttendanceList.dart';
 import 'Pages/Auth/LoginInterface.dart';
 import 'Config/api.dart';
 import 'Domain/Subject.dart'; // ← Just import normally
@@ -89,6 +95,23 @@ class MyApp extends StatelessWidget {
               : const RegistrarSubjectList();
         },
         '/registrar-registration-schedule': (ctx) => const RegistrarRegistrationSchedule(),
+
+        '/student-class-attendance': (ctx) => const StudentAttendanceList(),
+        '/student-cocurriculum-attendance': (ctx) => const StudentAttendanceList(),
+        '/lecturer-attendance': (ctx) => const LecturerAttendanceSession(),
+        '/lecturer-attendance-list': (ctx) {
+          final sessionId = ModalRoute.of(ctx)?.settings.arguments as int?;
+          return sessionId != null ? LecturerAttendanceList(sessionId: sessionId) : const LecturerAttendanceSession();
+        },
+        '/pusat-adab-attendance': (ctx) => const PusatAdabAttendanceSession(),
+        '/pusat-adab-attendance-list': (ctx) {
+          final sessionId = ModalRoute.of(ctx)?.settings.arguments as int?;
+          return sessionId != null ? PusatAdabAttendanceList(sessionId: sessionId) : const PusatAdabAttendanceSession();
+        },
+        '/student-checkin': (ctx) {
+          final args = ModalRoute.of(ctx)?.settings.arguments as Map<String, dynamic>?;
+          return StudentCheckIn(sessionData: args ?? {});
+        },
       },
     );
   }
