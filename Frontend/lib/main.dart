@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'Pages/Homepage/RegistrarHomepage.dart';
 import 'Pages/Homepage/StudentHomepage.dart';
 import 'Pages/Homepage/LecturerHomepage.dart';
+import 'Pages/Homepage/PusatAdabHomepage.dart';
 import 'Pages/SubjectRegistration/RegistrarSubjectList.dart';
 import 'Pages/SubjectRegistration/RegistrarAddSubject.dart';
 import 'Pages/SubjectRegistration/RegistrarEditSubject.dart';
@@ -61,6 +62,7 @@ class MyApp extends StatelessWidget {
         '/registrar-homepage': (ctx) => const RegistrarHomepage(),
         '/student-homepage': (ctx) => const StudentHomepage(),
         '/lecturer-homepage': (ctx) => const LecturerHomepage(),
+        '/pusat-adab-homepage': (context) => const PusatAdabHomepage(),
         '/student-subject': (ctx) => const StudentSubject(),
         '/student-activities': (ctx) => const StudentActivityList(),
         '/lecturer-subject-list': (ctx) => const LecturerSubjectList(),

@@ -78,6 +78,7 @@ class AppRoutes {
   static const String registrarHomepage = '/registrar-homepage';
   static const String lecturerHomepage = '/lecturer-homepage';
   static const String studentHomepage = '/student-homepage';
+  static const String pusatAdabHomepage = '/pusat-adab-homepage';
   static const String login = '/login';
 }
 
@@ -93,11 +94,12 @@ class LoginInterface extends StatefulWidget {
 }
 
 class _LoginInterfaceState extends State<LoginInterface> {
-  // STATE
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _isLoading = false;
   String? _errorMessage;
+
   String _selectedRole = 'facultyregistrar';
 
   @override
@@ -107,9 +109,7 @@ class _LoginInterfaceState extends State<LoginInterface> {
     super.dispose();
   }
 
-  // DATA METHODS
   Future<void> handleLogin() async {
-    // Validate inputs
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       setState(() => _errorMessage = 'Please enter email and password');
       return;
@@ -122,21 +122,23 @@ class _LoginInterfaceState extends State<LoginInterface> {
 
     try {
       final result = await ApiService.login(
-        email: _emailController.text,
-        password: _passwordController.text,
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
 
       if (result['success']) {
-        // Verify role matches
-        if (result['data']['role'] == _selectedRole) {
+        final userRole = result['data']['role']?.toString();
+
+        if (userRole == _selectedRole) {
           final prefs = await SharedPreferences.getInstance();
+
           await prefs.setString('auth_token', result['data']['token']);
           await prefs.setString('user_role', result['data']['role']);
           await prefs.setString('user_name', result['data']['full_name']);
           await prefs.setInt('user_id', result['data']['user_id']);
 
           if (mounted) {
-            navigateToRoleHome(result['data']['role']?.toString());
+            navigateToRoleHome(userRole);
           }
         } else {
           setState(() {
@@ -158,19 +160,26 @@ class _LoginInterfaceState extends State<LoginInterface> {
     }
   }
 
-  // NAVIGATION
   void navigateToRoleHome(String? role) {
     String? routeName;
+
     switch (role) {
       case 'facultyregistrar':
         routeName = AppRoutes.registrarHomepage;
         break;
+
       case 'lecturer':
         routeName = AppRoutes.lecturerHomepage;
         break;
+
       case 'student':
         routeName = AppRoutes.studentHomepage;
         break;
+
+      case 'pusatadab':
+        routeName = AppRoutes.pusatAdabHomepage;
+        break;
+
       default:
         setState(() {
           _errorMessage = 'Invalid role detected';
@@ -186,7 +195,6 @@ class _LoginInterfaceState extends State<LoginInterface> {
     );
   }
 
-  // BUILD
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -206,7 +214,7 @@ class _LoginInterfaceState extends State<LoginInterface> {
               buildEmailField(),
               const SizedBox(height: 16),
               buildPasswordField(),
-              if (_errorMessage != null) ...[buildErrorMessage()],
+              if (_errorMessage != null) buildErrorMessage(),
               const SizedBox(height: 24),
               buildLoginButton(),
             ],
@@ -216,7 +224,6 @@ class _LoginInterfaceState extends State<LoginInterface> {
     );
   }
 
-  // WIDGETS
   Widget buildLogo() {
     return Container(
       width: 80,
@@ -234,14 +241,14 @@ class _LoginInterfaceState extends State<LoginInterface> {
   }
 
   Widget buildTitle() {
-    return Column(
+    return const Column(
       children: [
-        const Text(
+        Text(
           'MyAcademic UMPSA',
           style: AppTextStyles.titleText,
         ),
-        const SizedBox(height: 8),
-        const Text(
+        SizedBox(height: 8),
+        Text(
           'Portal',
           style: AppTextStyles.subtitleText,
         ),
@@ -265,11 +272,11 @@ class _LoginInterfaceState extends State<LoginInterface> {
             isExpanded: true,
             underline: Container(),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            items: [
+            items: const [
               DropdownMenuItem(
                 value: 'facultyregistrar',
                 child: Row(
-                  children: const [
+                  children: [
                     Icon(
                       Icons.admin_panel_settings,
                       size: 20,
@@ -283,7 +290,7 @@ class _LoginInterfaceState extends State<LoginInterface> {
               DropdownMenuItem(
                 value: 'lecturer',
                 child: Row(
-                  children: const [
+                  children: [
                     Icon(
                       Icons.school,
                       size: 20,
@@ -297,7 +304,7 @@ class _LoginInterfaceState extends State<LoginInterface> {
               DropdownMenuItem(
                 value: 'student',
                 child: Row(
-                  children: const [
+                  children: [
                     Icon(
                       Icons.person,
                       size: 20,
@@ -305,6 +312,20 @@ class _LoginInterfaceState extends State<LoginInterface> {
                     ),
                     SizedBox(width: 12),
                     Text('Student'),
+                  ],
+                ),
+              ),
+              DropdownMenuItem(
+                value: 'pusatadab',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.event_available,
+                      size: 20,
+                      color: AppColors.roleIcon,
+                    ),
+                    SizedBox(width: 12),
+                    Text('Pusat Adab'),
                   ],
                 ),
               ),
@@ -332,7 +353,9 @@ class _LoginInterfaceState extends State<LoginInterface> {
         labelText: 'Email Address',
         hintText: 'Enter your email',
         prefixIcon: const Icon(Icons.email),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(
@@ -353,7 +376,9 @@ class _LoginInterfaceState extends State<LoginInterface> {
         labelText: 'Password',
         hintText: 'Enter your password',
         prefixIcon: const Icon(Icons.lock),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(
@@ -419,8 +444,9 @@ class _LoginInterfaceState extends State<LoginInterface> {
               width: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(AppColors.buttonText),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.buttonText,
+                ),
               ),
             )
           : const Text(
