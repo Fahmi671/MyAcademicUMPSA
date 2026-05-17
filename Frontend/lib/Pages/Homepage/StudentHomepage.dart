@@ -175,13 +175,15 @@ class _StudentHomepageState extends State<StudentHomepage> {
                   const SizedBox(height: 24),
                   const Text('Menu', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        GestureDetector(
                           onTap: () => Navigator.pushNamed(context, '/student-subject'),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            width: 100,
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(10),
@@ -189,20 +191,19 @@ class _StudentHomepageState extends State<StudentHomepage> {
                             ),
                             child: const Column(
                               children: [
-                                Icon(Icons.school, size: 36, color: Color(0xFF1F3E8A)),
+                                Icon(Icons.school, size: 32, color: Color(0xFF1F3E8A)),
                                 SizedBox(height: 8),
-                                Text('Subject\nRegistration', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                                Text('Subject\nRegistration', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
                               ],
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GestureDetector(
+                        const SizedBox(width: 10),
+                        GestureDetector(
                           onTap: () => Navigator.pushNamed(context, '/student-activities'),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            width: 100,
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(10),
@@ -210,19 +211,55 @@ class _StudentHomepageState extends State<StudentHomepage> {
                             ),
                             child: const Column(
                               children: [
-                                Icon(Icons.event_note, size: 36, color: Color(0xFF1F3E8A)),
+                                Icon(Icons.event_note, size: 32, color: Color(0xFF1F3E8A)),
                                 SizedBox(height: 8),
-                                Text(
-                                  'Co-Curriculum\nRegistration',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                                ),
+                                Text('Co-Curriculum\nRegistration', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
                               ],
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/student-class-attendance'),
+                          child: Container(
+                            width: 100,
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFE0E0E0)),
+                            ),
+                            child: const Column(
+                              children: [
+                                Icon(Icons.how_to_reg, size: 32, color: Color(0xFF1F3E8A)),
+                                SizedBox(height: 8),
+                                Text('Class\nAttendance', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/student-cocurriculum-attendance'),
+                          child: Container(
+                            width: 100,
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFE0E0E0)),
+                            ),
+                            child: const Column(
+                              children: [
+                                Icon(Icons.checklist, size: 32, color: Color(0xFF1F3E8A)),
+                                SizedBox(height: 8),
+                                Text('Co-Curriculum\nAttendance', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
                   const Text('Calendar', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
