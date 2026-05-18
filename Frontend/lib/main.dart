@@ -97,7 +97,7 @@ class MyApp extends StatelessWidget {
         '/registrar-registration-schedule': (ctx) => const RegistrarRegistrationSchedule(),
 
         '/student-class-attendance': (ctx) => const StudentAttendanceList(),
-        '/student-cocurriculum-attendance': (ctx) => const StudentAttendanceList(),
+        '/student-cocurriculum-attendance': (ctx) => const StudentAttendanceList(isActivity: true),
         '/lecturer-attendance': (ctx) => const LecturerAttendanceSession(),
         '/lecturer-attendance-list': (ctx) {
           final sessionId = ModalRoute.of(ctx)?.settings.arguments as int?;

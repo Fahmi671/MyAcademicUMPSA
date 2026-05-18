@@ -686,9 +686,22 @@ static Future<Map<String, dynamic>> deleteActivity(String activityId) async {
     }
   }
 
+  static Future<Map<String, dynamic>> getStudentRegisteredActivities() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/student/participations'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
   static Future<Map<String, dynamic>> checkInAttendance({
     required String attendanceCode,
-    required int? subjectId,
+    int? subjectId,
+    int? activityId,
   }) async {
     try {
       final response = await http.post(
@@ -697,6 +710,7 @@ static Future<Map<String, dynamic>> deleteActivity(String activityId) async {
         body: jsonEncode({
           'attendance_code': attendanceCode,
           'subject_id': subjectId,
+          'activity_id': activityId,
           'latitude': null,
           'longitude': null,
         }),
