@@ -29,7 +29,7 @@ class _LecturerAttendanceListState extends State<LecturerAttendanceList> {
 
   Future<void> fetchSubjectInfo() async {
     try {
-      final result = await ApiService.get('/subjects/${widget.sessionId}');
+      final result = await ApiService.getSubject(widget.sessionId);
       if (result['success']) {
         setState(() {
           _subjectInfo = result['data'];
@@ -50,11 +50,12 @@ class _LecturerAttendanceListState extends State<LecturerAttendanceList> {
   Future<void> generateCode() async {
     setState(() => _isGenerating = true);
     try {
-      final result = await ApiService.post('/attendance/sessions', {
-        'subject_id': widget.sessionId,
-        'session_type': 'class',
-        'time_limit': _timeLimit,
-      });
+      final result = await ApiService.createAttendanceSession(
+  subjectId: widget.sessionId,
+  activityId: null,
+  sessionType: 'class',
+  timeLimit: _timeLimit,
+);
 
       if (result['success']) {
         setState(() {
@@ -80,11 +81,12 @@ class _LecturerAttendanceListState extends State<LecturerAttendanceList> {
     }
     setState(() => _isOpening = true);
     try {
-      final result = await ApiService.post('/attendance/sessions', {
-        'subject_id': widget.sessionId,
-        'session_type': 'class',
-        'time_limit': _timeLimit,
-      });
+      final result = await ApiService.createAttendanceSession(
+  subjectId: widget.sessionId,
+  activityId: null,
+  sessionType: 'class',
+  timeLimit: _timeLimit,
+);
 
       if (result['success']) {
         setState(() {
@@ -111,7 +113,7 @@ class _LecturerAttendanceListState extends State<LecturerAttendanceList> {
     }
     setState(() => _isLoading = true);
     try {
-      final result = await ApiService.get('/attendance/sessions/$_sessionId/records');
+      final result = await ApiService.getAttendanceRecords(_sessionId!);
       if (result['success']) {
         setState(() {
           _attendanceList = result['data'] ?? [];

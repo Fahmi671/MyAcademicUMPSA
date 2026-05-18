@@ -29,7 +29,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
 
   Future<void> fetchActivityInfo() async {
     try {
-      final result = await ApiService.get('/activities/${widget.sessionId}');
+      final result = await ApiService.getActivityDetail(widget.sessionId);
       if (result['success']) {
         setState(() {
           _activityInfo = result['data'];
@@ -46,11 +46,12 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
   Future<void> generateCode() async {
     setState(() => _isGenerating = true);
     try {
-      final result = await ApiService.post('/attendance/sessions', {
-        'activity_id': widget.sessionId,
-        'session_type': 'activity',
-        'time_limit': _timeLimit,
-      });
+      final result = await ApiService.createAttendanceSession(
+  subjectId: null,
+  activityId: widget.sessionId,
+  sessionType: 'activity',
+  timeLimit: _timeLimit,
+);
 
       if (result['success']) {
         setState(() {
@@ -76,11 +77,12 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
     }
     setState(() => _isOpening = true);
     try {
-      final result = await ApiService.post('/attendance/sessions', {
-        'activity_id': widget.sessionId,
-        'session_type': 'activity',
-        'time_limit': _timeLimit,
-      });
+      final result = await ApiService.createAttendanceSession(
+  subjectId: null,
+  activityId: widget.sessionId,
+  sessionType: 'activity',
+  timeLimit: _timeLimit,
+);
 
       if (result['success']) {
         setState(() {
@@ -108,7 +110,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
     setState(() => _isLoading = true);
     try {
       final result =
-          await ApiService.get('/attendance/sessions/$_sessionId/records');
+         await ApiService.getAttendanceRecords(_sessionId!);
       if (result['success']) {
         setState(() {
           _attendanceList = result['data'] ?? [];

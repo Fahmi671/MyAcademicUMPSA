@@ -21,7 +21,7 @@ class _LecturerAttendanceSessionState extends State<LecturerAttendanceSession> {
 
   Future<void> fetchSubjects() async {
     try {
-      final result = await ApiService.get('/lecturer/subjects');
+      final result = await ApiService.getLecturerAssignedSubjects();
       if (result['success']) {
         setState(() {
           _subjects = result['data'] ?? [];

@@ -28,12 +28,10 @@ class _StudentCheckInState extends State<StudentCheckIn> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await ApiService.post('/attendance/checkin', {
-        'attendance_code': code,
-        'subject_id': widget.sessionData['subject_id'],
-        'latitude': null,
-        'longitude': null,
-      });
+      final result = await ApiService.checkInAttendance(
+  attendanceCode: code,
+  subjectId: widget.sessionData['subject_id'],
+);
 
       if (result['success']) {
         setState(() {

@@ -670,5 +670,88 @@ static Future<Map<String, dynamic>> deleteActivity(String activityId) async {
       return {'success': false, 'message': 'Error: $e'};
     }
   }
+
+  // ════════════════════════════════════════════════════════════
+  // ATTENDANCE
+  // ════════════════════════════════════════════════════════════
+  static Future<Map<String, dynamic>> getStudentClasses() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/student/enrollments'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> checkInAttendance({
+    required String attendanceCode,
+    required int? subjectId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/attendance/checkin'),
+        headers: getHeaders(),
+        body: jsonEncode({
+          'attendance_code': attendanceCode,
+          'subject_id': subjectId,
+          'latitude': null,
+          'longitude': null,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createAttendanceSession({
+    required int? subjectId,
+    required int? activityId,
+    required String sessionType,
+    required int timeLimit,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/attendance/sessions'),
+        headers: getHeaders(),
+        body: jsonEncode({
+          'subject_id': subjectId,
+          'activity_id': activityId,
+          'session_type': sessionType,
+          'time_limit': timeLimit,
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAttendanceRecords(int sessionId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/attendance/sessions/$sessionId/records'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getActivityDetail(int activityId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/activities/$activityId'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
 }
 

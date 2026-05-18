@@ -21,7 +21,7 @@ class _StudentAttendanceListState extends State<StudentAttendanceList> {
 
   Future<void> fetchEnrollments() async {
     try {
-      final result = await ApiService.get('/student/enrollments');
+      final result = await ApiService.getStudentClasses();
       if (result['success']) {
         setState(() {
           _enrollments = result['data'] ?? [];

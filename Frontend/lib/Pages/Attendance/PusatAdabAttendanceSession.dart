@@ -23,7 +23,7 @@ class _PusatAdabAttendanceSessionState
 
   Future<void> fetchActivities() async {
     try {
-      final result = await ApiService.get('/activities');
+      final result = await ApiService.getActivities();
       if (result['success']) {
         setState(() {
           _activities = result['data'] ?? [];
