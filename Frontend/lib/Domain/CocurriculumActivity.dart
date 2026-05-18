@@ -10,7 +10,6 @@ class CocurriculumActivity {
   final int capacity;
   final int availableSlots;
   final String status;
-  final String description;
 
   CocurriculumActivity({
     required this.activityId,
@@ -24,7 +23,6 @@ class CocurriculumActivity {
     required this.capacity,
     required this.availableSlots,
     required this.status,
-    required this.description,
   });
 
   factory CocurriculumActivity.fromJson(Map<String, dynamic> json) {
@@ -40,7 +38,6 @@ class CocurriculumActivity {
       capacity: int.tryParse(json['Capacity']?.toString() ?? '0') ?? 0,
       availableSlots: int.tryParse(json['Available_Slots']?.toString() ?? '0') ?? 0,
       status: json['Status']?.toString() ?? 'Open',
-      description: json['Description']?.toString() ?? '',
     );
   }
 }

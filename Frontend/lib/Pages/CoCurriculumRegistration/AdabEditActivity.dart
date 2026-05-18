@@ -59,6 +59,147 @@ class _AdabEditActivityState extends State<AdabEditActivity> {
     super.dispose();
   }
 
+  Future<void> pickDate(TextEditingController controller) async {
+    DateTime initialDate = DateTime.now();
+
+    try {
+      if (controller.text.isNotEmpty) {
+        initialDate = DateTime.parse(controller.text);
+      }
+    } catch (_) {
+      initialDate = DateTime.now();
+    }
+
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(DateTime.now().year - 1),
+      lastDate: DateTime(DateTime.now().year + 5),
+    );
+
+    if (pickedDate != null) {
+      controller.text =
+          '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
+    }
+  }
+
+  Future<void> pickTime(TextEditingController controller) async {
+    TimeOfDay initialTime = TimeOfDay.now();
+
+    if (controller.text.isNotEmpty) {
+      final parts = controller.text.split(':');
+      if (parts.length >= 2) {
+        final hour = int.tryParse(parts[0]);
+        final minute = int.tryParse(parts[1]);
+
+        if (hour != null && minute != null) {
+          initialTime = TimeOfDay(hour: hour, minute: minute);
+        }
+      }
+    }
+
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+
+    if (pickedTime != null) {
+      final hour = pickedTime.hour.toString().padLeft(2, '0');
+      final minute = pickedTime.minute.toString().padLeft(2, '0');
+
+      controller.text = '$hour:$minute:00';
+    }
+  }
+
+  Future<void> showUpdateSuccessDialog() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: const Text(
+          'Update Successful',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFF3F8F3F),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          'Module information has been updated.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          SizedBox(
+            height: 30,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF3F8F3F),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'OK',
+                style: TextStyle(fontSize: 11),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> showValidationDialog(String message) async {
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: const Text(
+          'Validation Error',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          SizedBox(
+            height: 30,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'OK',
+                style: TextStyle(fontSize: 11),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget buildTextField({
     required String label,
     required TextEditingController controller,
@@ -92,6 +233,54 @@ class _AdabEditActivityState extends State<AdabEditActivity> {
                     vertical: 6,
                   ),
                   border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildPickerField({
+    required String label,
+    required TextEditingController controller,
+    required String hintText,
+    required VoidCallback onTap,
+    required IconData icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 95,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: SizedBox(
+              height: 36,
+              child: TextField(
+                controller: controller,
+                readOnly: true,
+                onTap: onTap,
+                style: const TextStyle(fontSize: 11),
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  hintStyle: const TextStyle(fontSize: 11),
+                  suffixIcon: Icon(icon, size: 18),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ),
@@ -154,25 +343,29 @@ class _AdabEditActivityState extends State<AdabEditActivity> {
     );
   }
 
-  Future<void> updateActivity() async {
+  bool validateForm() {
     if (moduleCodeController.text.trim().isEmpty ||
         moduleNameController.text.trim().isEmpty ||
         venueController.text.trim().isEmpty ||
         dateController.text.trim().isEmpty ||
         timeController.text.trim().isEmpty ||
         capacityController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
+      return false;
+    }
+
+    return true;
+  }
+
+  Future<void> updateActivity() async {
+    if (!validateForm()) {
+      await showValidationDialog('Please fill in all fields.');
       return;
     }
 
     final capacity = int.tryParse(capacityController.text.trim());
 
     if (capacity == null || capacity <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Capacity must be a valid number')),
-      );
+      await showValidationDialog('Capacity must be a valid number.');
       return;
     }
 
@@ -192,8 +385,6 @@ class _AdabEditActivityState extends State<AdabEditActivity> {
       capacity: capacity,
       availableSlots: capacity,
       status: selectedStatus,
-      description:
-          '${moduleNameController.text.trim()} co-curriculum activity for students.',
     );
 
     if (!mounted) return;
@@ -201,15 +392,14 @@ class _AdabEditActivityState extends State<AdabEditActivity> {
     setState(() => isSaving = false);
 
     if (result['success'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Activity updated successfully')),
-      );
-      Navigator.pop(context);
+      await showUpdateSuccessDialog();
+
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message'] ?? 'Failed to update activity'),
-        ),
+      await showValidationDialog(
+        result['message'] ?? 'Failed to update activity.',
       );
     }
   }
@@ -217,19 +407,54 @@ class _AdabEditActivityState extends State<AdabEditActivity> {
   Future<void> deleteActivity() async {
     final confirm = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Activity'),
-        content: const Text('Are you sure you want to delete this activity?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: const Text(
+          'Delete Module',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFF3F8F3F),
+            fontWeight: FontWeight.bold,
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this module?',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          SizedBox(
+            height: 30,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+              ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(fontSize: 11),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 30,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF3F8F3F),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text(
+                'Confirm',
+                style: TextStyle(fontSize: 11),
+              ),
             ),
           ),
         ],
@@ -238,20 +463,19 @@ class _AdabEditActivityState extends State<AdabEditActivity> {
 
     if (confirm != true) return;
 
+    setState(() => isSaving = true);
+
     final result = await ApiService.deleteActivity(widget.activity.activityId);
 
     if (!mounted) return;
 
+    setState(() => isSaving = false);
+
     if (result['success'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Activity deleted successfully')),
-      );
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message'] ?? 'Failed to delete activity'),
-        ),
+      await showValidationDialog(
+        result['message'] ?? 'Failed to delete activity.',
       );
     }
   }
@@ -269,7 +493,7 @@ class _AdabEditActivityState extends State<AdabEditActivity> {
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(14),
         child: Container(
           width: double.infinity,
@@ -283,7 +507,6 @@ class _AdabEditActivityState extends State<AdabEditActivity> {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-
               buildTextField(
                 label: 'Module Code:',
                 controller: moduleCodeController,
@@ -304,13 +527,19 @@ class _AdabEditActivityState extends State<AdabEditActivity> {
                 label: 'Venue:',
                 controller: venueController,
               ),
-              buildTextField(
+              buildPickerField(
                 label: 'Date:',
                 controller: dateController,
+                hintText: 'Select date',
+                icon: Icons.calendar_today,
+                onTap: () => pickDate(dateController),
               ),
-              buildTextField(
+              buildPickerField(
                 label: 'Time:',
                 controller: timeController,
+                hintText: 'Select time',
+                icon: Icons.access_time,
+                onTap: () => pickTime(timeController),
               ),
               buildTextField(
                 label: 'Capacity:',
@@ -325,46 +554,63 @@ class _AdabEditActivityState extends State<AdabEditActivity> {
                   setState(() => selectedStatus = value!);
                 },
               ),
-
               const SizedBox(height: 16),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      foregroundColor: Colors.white,
+                  SizedBox(
+                    height: 32,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed:
+                          isSaving ? null : () => Navigator.pop(context),
+                      child: const Text(
+                        'Back',
+                        style: TextStyle(fontSize: 11),
+                      ),
                     ),
-                    onPressed: isSaving ? null : () => Navigator.pop(context),
-                    child: const Text('Back'),
                   ),
                   const SizedBox(width: 8),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                  SizedBox(
+                    height: 32,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: isSaving ? null : deleteActivity,
+                      child: const Text(
+                        'Delete',
+                        style: TextStyle(fontSize: 11),
+                      ),
                     ),
-                    onPressed: isSaving ? null : deleteActivity,
-                    child: const Text('Delete'),
                   ),
                   const SizedBox(width: 8),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: green,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: isSaving ? null : updateActivity,
-                    child: isSaving
-                        ? const SizedBox(
-                            height: 14,
-                            width: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                  SizedBox(
+                    height: 32,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: green,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: isSaving ? null : updateActivity,
+                      child: isSaving
+                          ? const SizedBox(
+                              height: 14,
+                              width: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Update',
+                              style: TextStyle(fontSize: 11),
                             ),
-                          )
-                        : const Text('Update'),
+                    ),
                   ),
                 ],
               ),
