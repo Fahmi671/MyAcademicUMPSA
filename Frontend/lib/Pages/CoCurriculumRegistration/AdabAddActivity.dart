@@ -162,7 +162,6 @@ class _AdabAddActivityState extends State<AdabAddActivity> {
 
     final result = await ApiService.createActivity(
       activityId: generateActivityId(),
-      pusatAdabId: 'PA001',
       moduleCode: moduleCodeController.text.trim(),
       moduleName: moduleNameController.text.trim(),
       campus: selectedCampus,
