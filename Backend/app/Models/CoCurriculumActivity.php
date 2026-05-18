@@ -25,6 +25,5 @@ class CoCurriculumActivity extends Model
         'Capacity',
         'Available_Slots',
         'Status',
-        'Description',
     ];
 }

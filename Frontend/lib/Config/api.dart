@@ -550,7 +550,6 @@ static Future<Map<String, dynamic>> getActivities() async {
 }
 
 static Future<Map<String, dynamic>> createActivity({
-  required String activityId,
   required String moduleCode,
   required String moduleName,
   required String campus,
@@ -560,14 +559,12 @@ static Future<Map<String, dynamic>> createActivity({
   required int capacity,
   required int availableSlots,
   required String status,
-  required String description,
 }) async {
   try {
     final response = await http.post(
       Uri.parse('$baseUrl/activities'),
       headers: getHeaders(),
       body: jsonEncode({
-        'Activity_ID': activityId,
         'Module_Code': moduleCode,
         'Module_Name': moduleName,
         'Campus': campus,
@@ -577,7 +574,6 @@ static Future<Map<String, dynamic>> createActivity({
         'Capacity': capacity,
         'Available_Slots': availableSlots,
         'Status': status,
-        'Description': description,
       }),
     );
 
@@ -602,7 +598,6 @@ static Future<Map<String, dynamic>> updateActivity({
   required int capacity,
   required int availableSlots,
   required String status,
-  required String description,
 }) async {
   try {
     final response = await http.put(
@@ -618,7 +613,6 @@ static Future<Map<String, dynamic>> updateActivity({
         'Capacity': capacity,
         'Available_Slots': availableSlots,
         'Status': status,
-        'Description': description,
       }),
     );
 

@@ -51,6 +51,24 @@ class CoCurriculumActivityController extends Controller
         }
     }
 
+    private function generateActivityId()
+{
+    $activities = CoCurriculumActivity::all();
+    $maxNumber = 0;
+
+    foreach ($activities as $activity) {
+        $number = (int) substr($activity->Activity_ID, 1);
+
+        if ($number > $maxNumber) {
+            $maxNumber = $number;
+        }
+    }
+
+    $nextNumber = $maxNumber + 1;
+
+    return 'A' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+}
+
     public function store(Request $request)
 {
     try {
@@ -66,7 +84,6 @@ class CoCurriculumActivityController extends Controller
         }
 
         $request->validate([
-            'Activity_ID' => 'required|string',
             'Module_Code' => 'required|string',
             'Module_Name' => 'required|string',
             'Campus' => 'required|string',
@@ -76,11 +93,10 @@ class CoCurriculumActivityController extends Controller
             'Capacity' => 'required|integer|min:1',
             'Available_Slots' => 'required|integer|min:0',
             'Status' => 'nullable|string',
-            'Description' => 'nullable|string',
         ]);
 
         $activity = CoCurriculumActivity::create([
-            'Activity_ID' => $request->Activity_ID,
+            'Activity_ID' => $this->generateActivityId(),
             'PusatAdab_ID' => $pusatAdab->PusatAdab_ID,
             'Module_Code' => $request->Module_Code,
             'Module_Name' => $request->Module_Name,
@@ -91,7 +107,6 @@ class CoCurriculumActivityController extends Controller
             'Capacity' => $request->Capacity,
             'Available_Slots' => $request->Available_Slots,
             'Status' => $request->Status ?? 'Open',
-            'Description' => $request->Description,
         ]);
 
         return response()->json([
@@ -139,7 +154,6 @@ class CoCurriculumActivityController extends Controller
                 'Capacity',
                 'Available_Slots',
                 'Status',
-                'Description',
             ]));
 
             return response()->json([

@@ -113,7 +113,6 @@ class StudentActivityDetail extends StatelessWidget {
               detailRow('Time:', activity.activityTime),
               detailRow('Capacity:', activity.capacity.toString()),
               detailRow('Available:', activity.availableSlots.toString()),
-              detailRow('Description:', activity.description),
 
               const SizedBox(height: 16),
 
