@@ -1,11 +1,72 @@
 import 'package:flutter/material.dart';
+import '../../Config/api.dart';
 
-class StudentClaimCredit extends StatelessWidget {
+class StudentClaimCredit extends StatefulWidget {
   const StudentClaimCredit({super.key});
+
+  @override
+  State<StudentClaimCredit> createState() => _StudentClaimCreditState();
+}
+
+class _StudentClaimCreditState extends State<StudentClaimCredit> {
+  final Color blue = const Color(0xFF1F3E8A);
+  bool isSubmitting = false;
 
   String valueOf(dynamic item, String key) {
     if (item == null) return '';
     return item[key]?.toString() ?? '';
+  }
+
+  bool canClaim(String attendanceStatus) {
+    final status = attendanceStatus.toLowerCase();
+    return status == 'present' || status == 'attended';
+  }
+
+  Future<void> showMessageDialog({
+    required String title,
+    required String message,
+    required bool success,
+  }) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Text(
+          title,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: success ? blue : Colors.red,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          SizedBox(
+            height: 30,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: success ? blue : Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'OK',
+                style: TextStyle(fontSize: 11),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget buildDetailRow(String label, String value) {
@@ -45,57 +106,65 @@ class StudentClaimCredit extends StatelessWidget {
     );
   }
 
-  Future<void> showClaimSuccessDialog(BuildContext context) async {
-    const blue = Color(0xFF1F3E8A);
+  Future<void> submitClaim(dynamic participation) async {
+    final participationId =
+        int.tryParse(valueOf(participation, 'Participation_ID'));
 
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        title: const Text(
-          'Claim Submitted',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: blue,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: const Text(
-          'Your credit claim has been submitted successfully.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          SizedBox(
-            height: 30,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'OK',
-                style: TextStyle(fontSize: 11),
-              ),
-            ),
-          ),
-        ],
-      ),
+    final attendanceStatus = valueOf(participation, 'Attendance_Status');
+
+    if (participationId == null) {
+      await showMessageDialog(
+        title: 'Claim Failed',
+        message: 'Invalid participation ID.',
+        success: false,
+      );
+      return;
+    }
+
+    if (!canClaim(attendanceStatus)) {
+      await showMessageDialog(
+        title: 'Claim Not Allowed',
+        message: 'You can only claim credit after attendance is verified.',
+        success: false,
+      );
+      return;
+    }
+
+    setState(() => isSubmitting = true);
+
+    final result = await ApiService.submitCreditClaim(
+      participationId: participationId,
+      attendanceStatus: attendanceStatus,
     );
+
+    if (!mounted) return;
+
+    setState(() => isSubmitting = false);
+
+    if (result['success'] == true) {
+      await showMessageDialog(
+        title: 'Claim Submitted',
+        message: result['message'] ??
+            'Your credit claim has been submitted successfully.',
+        success: true,
+      );
+
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
+    } else {
+      await showMessageDialog(
+        title: 'Claim Failed',
+        message: result['message'] ??
+            result['error'] ??
+            'Claim Submission Failed.',
+        success: false,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    const blue = Color(0xFF1F3E8A);
-
     final participation =
         ModalRoute.of(context)?.settings.arguments as dynamic;
 
@@ -105,7 +174,15 @@ class StudentClaimCredit extends StatelessWidget {
     final venue = valueOf(participation, 'Venue');
     final date = valueOf(participation, 'Activity_Date');
     final time = valueOf(participation, 'Activity_Time');
-    final status = valueOf(participation, 'Registration_Status');
+    final registrationStatus = valueOf(participation, 'Registration_Status');
+
+    String attendanceStatus = valueOf(participation, 'Attendance_Status');
+
+    if (attendanceStatus.isEmpty) {
+      attendanceStatus = 'Not verified';
+    }
+
+    final claimAllowed = canClaim(attendanceStatus);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -142,20 +219,14 @@ class StudentClaimCredit extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-
-                    buildDetailRow(
-                      'Module Name:',
-                      '$moduleCode $moduleName',
-                    ),
+                    buildDetailRow('Module Name:', '$moduleCode $moduleName'),
                     buildDetailRow('Campus:', campus),
                     buildDetailRow('Venue:', venue),
                     buildDetailRow('Date:', date),
                     buildDetailRow('Time:', time),
-                    buildDetailRow('Attendance:', 'Present'),
-                    buildDetailRow('Status:', status),
-
+                    buildDetailRow('Attendance:', attendanceStatus),
+                    buildDetailRow('Status:', registrationStatus),
                     const SizedBox(height: 16),
-
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -166,7 +237,9 @@ class StudentClaimCredit extends StatelessWidget {
                               backgroundColor: Colors.grey,
                               foregroundColor: Colors.white,
                             ),
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: isSubmitting
+                                ? null
+                                : () => Navigator.pop(context),
                             child: const Text(
                               'Back',
                               style: TextStyle(fontSize: 11),
@@ -178,23 +251,44 @@ class StudentClaimCredit extends StatelessWidget {
                           height: 32,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: blue,
+                              backgroundColor:
+                                  claimAllowed ? blue : Colors.grey,
                               foregroundColor: Colors.white,
                             ),
-                            onPressed: () async {
-                              await showClaimSuccessDialog(context);
-                              if (context.mounted) {
-                                Navigator.pop(context);
-                              }
-                            },
-                            child: const Text(
-                              'Claim',
-                              style: TextStyle(fontSize: 11),
-                            ),
+                            onPressed: isSubmitting
+                                ? null
+                                : () => submitClaim(participation),
+                            child: isSubmitting
+                                ? const SizedBox(
+                                    height: 14,
+                                    width: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Claim',
+                                    style: TextStyle(fontSize: 11),
+                                  ),
                           ),
                         ),
                       ],
                     ),
+                    if (!claimAllowed) ...[
+                      const SizedBox(height: 12),
+                      const Center(
+                        child: Text(
+                          'Credit claim is only available after attendance is verified.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
         ),

@@ -724,7 +724,71 @@ static Future<Map<String, dynamic>> withdrawParticipation({
   }
 }
 
-  
+ // ════════════════════════════════════════════════════════════
+// CREDIT CLAIM
+// ════════════════════════════════════════════════════════════
+static Future<Map<String, dynamic>> submitCreditClaim({
+  required int participationId,
+  required String attendanceStatus,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/claims'),
+      headers: getHeaders(),
+      body: jsonEncode({
+        'Participation_ID': participationId,
+        'Attendance_Status': attendanceStatus,
+      }),
+    );
+
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error: $e',
+    };
+  }
+}
+
+static Future<Map<String, dynamic>> getPendingClaims() async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/claims/pending'),
+      headers: getHeaders(),
+    );
+
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error: $e',
+    };
+  }
+}
+
+static Future<Map<String, dynamic>> reviewClaim({
+  required int claimId,
+  required String claimStatus,
+  String? remarks,
+}) async {
+  try {
+    final response = await http.put(
+      Uri.parse('$baseUrl/claims/$claimId/review'),
+      headers: getHeaders(),
+      body: jsonEncode({
+        'Claim_Status': claimStatus,
+        'Remarks': remarks,
+      }),
+    );
+
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error: $e',
+    };
+  }
+} 
 
   // ════════════════════════════════════════════════════════════
   // ATTENDANCE

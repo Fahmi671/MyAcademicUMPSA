@@ -31,6 +31,8 @@ class _AdabManageActivityState extends State<AdabManageActivity> {
 
     final result = await ApiService.getActivities();
 
+    if (!mounted) return;
+
     if (result['success'] == true) {
       final List data = result['data'] ?? [];
 
@@ -48,29 +50,151 @@ class _AdabManageActivityState extends State<AdabManageActivity> {
     }
   }
 
-  Future<void> deleteActivity(CocurriculumActivity activity) async {
-    final confirm = await showDialog<bool>(
+  Future<bool?> showDeleteConfirmDialog(CocurriculumActivity activity) {
+    return showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Activity'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: const Text(
+          'Delete Module',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFF3F8F3F),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           'Are you sure you want to delete ${activity.moduleCode} ${activity.moduleName}?',
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+          SizedBox(
+            height: 30,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+              ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(fontSize: 11),
+              ),
+            ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
+          SizedBox(
+            height: 30,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text(
+                'Confirm',
+                style: TextStyle(fontSize: 11),
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> showDeleteSuccessDialog() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: const Text(
+          'Delete Successful',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFF3F8F3F),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          'Module information has been deleted.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          SizedBox(
+            height: 30,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF3F8F3F),
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 24),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'OK',
+                style: TextStyle(fontSize: 11),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> showErrorDialog(String message) async {
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: const Text(
+          'Error',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          SizedBox(
+            height: 30,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+              ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'OK',
+                style: TextStyle(fontSize: 11),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> deleteActivity(CocurriculumActivity activity) async {
+    final confirm = await showDeleteConfirmDialog(activity);
 
     if (confirm != true) return;
 
@@ -79,32 +203,42 @@ class _AdabManageActivityState extends State<AdabManageActivity> {
     if (!mounted) return;
 
     if (result['success'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Activity deleted successfully')),
-      );
+      await showDeleteSuccessDialog();
       fetchActivities();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message'] ?? 'Failed to delete activity'),
-        ),
+      await showErrorDialog(
+        result['message'] ?? 'Failed to delete activity.',
       );
     }
   }
 
   void goToAddActivity() async {
-    await Navigator.pushNamed(context, '/adab-add-activity');
-    fetchActivities();
+    final result = await Navigator.pushNamed(context, '/adab-add-activity');
+
+    if (result == true) {
+      fetchActivities();
+    } else {
+      fetchActivities();
+    }
   }
 
   void goToEditActivity(CocurriculumActivity activity) async {
-    await Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AdabEditActivity(activity: activity),
       ),
     );
-    fetchActivities();
+
+    if (result == true) {
+      fetchActivities();
+    } else {
+      fetchActivities();
+    }
+  }
+
+  void goToReviewClaims() {
+    Navigator.pushNamed(context, '/adab-review-activity');
   }
 
   Widget buildHeaderRow() {
@@ -270,6 +404,7 @@ class _AdabManageActivityState extends State<AdabManageActivity> {
       return const Center(
         child: Text(
           'No co-curriculum activities found.',
+          textAlign: TextAlign.center,
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
       );
@@ -290,6 +425,48 @@ class _AdabManageActivityState extends State<AdabManageActivity> {
     );
   }
 
+  Widget buildBottomButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        SizedBox(
+          height: 32,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              minimumSize: Size.zero,
+            ),
+            onPressed: goToReviewClaims,
+            icon: const Icon(Icons.fact_check, size: 14),
+            label: const Text(
+              'Review Credit Claims',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 32,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              minimumSize: Size.zero,
+            ),
+            onPressed: goToAddActivity,
+            icon: const Icon(Icons.add, size: 14),
+            label: const Text(
+              'Add Activity',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -302,39 +479,37 @@ class _AdabManageActivityState extends State<AdabManageActivity> {
           'Co-Curriculum Management',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Image.asset(
+              'assets/images/umpsa_logo.png',
+              width: 34,
+              height: 34,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(
+                  Icons.account_balance,
+                  color: Colors.white,
+                );
+              },
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Container(
                 width: double.infinity,
+                padding: const EdgeInsets.all(10),
                 color: Colors.white,
                 child: buildActivityTable(),
               ),
             ),
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 8,
-                  ),
-                  minimumSize: Size.zero,
-                ),
-                onPressed: goToAddActivity,
-                child: const Text(
-                  'Add Activity',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
+            buildBottomButtons(),
           ],
         ),
       ),

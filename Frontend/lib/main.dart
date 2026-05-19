@@ -17,6 +17,7 @@ import 'Pages/CoCurriculumRegistration/StudentRegisteredActivity.dart';
 import 'Pages/CoCurriculumRegistration/StudentClaimCredit.dart';
 import 'Pages/CoCurriculumRegistration/AdabManageActivity.dart';
 import 'Pages/CoCurriculumRegistration/AdabAddActivity.dart';
+import 'Pages/CoCurriculumRegistration/AdabReviewActivity.dart';
 import 'Pages/Attendance/StudentAttendanceList.dart';
 import 'Pages/Attendance/StudentCheckIn.dart';
 import 'Pages/Attendance/LecturerAttendanceSession.dart';
@@ -80,6 +81,7 @@ class MyApp extends StatelessWidget {
         '/student-claim-credit': (ctx) => const StudentClaimCredit(),
         '/adab-manage-activity': (ctx) => const AdabManageActivity(),
         '/adab-add-activity': (ctx) => const AdabAddActivity(),
+        '/adab-review-activity': (ctx) => const AdabReviewActivity(),
         '/lecturer-subject-detail': (ctx) {
           final subjectCode = ModalRoute.of(ctx)?.settings.arguments as String?;
           return subjectCode != null ? LecturerSubjectDetail(subjectCode: subjectCode) : const LecturerSubjectList();
