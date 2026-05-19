@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../Config/api.dart';
 import '../../Domain/CocurriculumActivity.dart';
 
-class StudentActivityDetail extends StatelessWidget {
+class StudentActivityDetail extends StatefulWidget {
   final CocurriculumActivity activity;
 
   const StudentActivityDetail({
@@ -9,15 +10,39 @@ class StudentActivityDetail extends StatelessWidget {
     required this.activity,
   });
 
-  void showMessageDialog(BuildContext context, bool success, String message) {
-    showDialog(
+  @override
+  State<StudentActivityDetail> createState() => _StudentActivityDetailState();
+}
+
+class _StudentActivityDetailState extends State<StudentActivityDetail> {
+  final Color blue = const Color(0xFF1F3E8A);
+
+  late CocurriculumActivity activity;
+  bool isRegistering = false;
+
+  @override
+  void initState() {
+    super.initState();
+    activity = widget.activity;
+  }
+
+  Future<void> showMessageDialog({
+    required String title,
+    required String message,
+    required bool success,
+  }) async {
+    await showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         title: Text(
-          success ? 'Registration Successful' : 'Registration Failed',
+          title,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF1F3E8A),
+          style: TextStyle(
+            color: success ? blue : Colors.red,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -25,49 +50,117 @@ class StudentActivityDetail extends StatelessWidget {
         content: Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
         ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1F3E8A),
-              foregroundColor: Colors.white,
+          SizedBox(
+            height: 32,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: success ? blue : Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'OK',
+                style: TextStyle(fontSize: 11),
+              ),
             ),
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
           ),
         ],
       ),
     );
   }
 
+  Future<void> registerActivity() async {
+    if (activity.availableSlots <= 0) {
+      await showMessageDialog(
+        title: 'Registration Failed',
+        message: 'Module has reached maximum capacity.',
+        success: false,
+      );
+      return;
+    }
+
+    if (activity.status.toLowerCase() != 'open') {
+      await showMessageDialog(
+        title: 'Registration Failed',
+        message: 'Module is no longer available.',
+        success: false,
+      );
+      return;
+    }
+
+    setState(() => isRegistering = true);
+
+    final result = await ApiService.registerActivity(
+      activityId: activity.activityId,
+    );
+
+    if (!mounted) return;
+
+    setState(() => isRegistering = false);
+
+    if (result['success'] == true) {
+      await showMessageDialog(
+        title: 'Registration Successful',
+        message: result['message'] ??
+            'You have successfully registered for this module.',
+        success: true,
+      );
+
+      if (mounted) {
+        Navigator.pushReplacementNamed(
+          context,
+          '/student-registered-activities',
+        );
+      }
+    } else {
+      await showMessageDialog(
+        title: 'Registration Failed',
+        message: result['message'] ??
+            result['error'] ??
+            'Failed to register activity.',
+        success: false,
+      );
+    }
+  }
+
   Widget detailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
             width: 95,
             child: Text(
               label,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+              height: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              alignment: Alignment.centerLeft,
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(color: Color(0xFFE0E0E0)),
+                border: Border.all(color: const Color(0xFFD0D0D0)),
               ),
               child: Text(
                 value,
-                style: const TextStyle(fontSize: 12),
+                style: const TextStyle(fontSize: 11),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
@@ -78,7 +171,9 @@ class StudentActivityDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const blue = Color(0xFF1F3E8A);
+    final isFull = activity.availableSlots <= 0 ||
+        activity.status.toLowerCase() == 'full' ||
+        activity.status.toLowerCase() == 'closed';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -91,7 +186,7 @@ class StudentActivityDetail extends StatelessWidget {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(14),
         child: Container(
           width: double.infinity,
@@ -106,7 +201,10 @@ class StudentActivityDetail extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              detailRow('Module Name:', '${activity.moduleCode} ${activity.moduleName}'),
+              detailRow(
+                'Module Name:',
+                '${activity.moduleCode} ${activity.moduleName}',
+              ),
               detailRow('Campus:', activity.campus),
               detailRow('Venue:', activity.venue),
               detailRow('Date:', activity.activityDate),
@@ -119,42 +217,46 @@ class StudentActivityDetail extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      foregroundColor: Colors.white,
+                  SizedBox(
+                    height: 32,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: isRegistering
+                          ? null
+                          : () => Navigator.pop(context, false),
+                      child: const Text(
+                        'Back',
+                        style: TextStyle(fontSize: 11),
+                      ),
                     ),
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Back'),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: blue,
-                      foregroundColor: Colors.white,
+                  SizedBox(
+                    height: 32,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isFull ? Colors.grey : blue,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed:
+                          isRegistering || isFull ? null : registerActivity,
+                      child: isRegistering
+                          ? const SizedBox(
+                              height: 14,
+                              width: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              isFull ? 'Full' : 'Register',
+                              style: const TextStyle(fontSize: 11),
+                            ),
                     ),
-                    onPressed: () {
-                      if (activity.availableSlots <= 0) {
-                        showMessageDialog(
-                          context,
-                          false,
-                          'Module has reached maximum capacity.',
-                        );
-                      } else if (activity.status != 'Open') {
-                        showMessageDialog(
-                          context,
-                          false,
-                          'Module is no longer available.',
-                        );
-                      } else {
-                        showMessageDialog(
-                          context,
-                          true,
-                          'You have successfully registered for this module.',
-                        );
-                      }
-                    },
-                    child: const Text('Register'),
                   ),
                 ],
               ),

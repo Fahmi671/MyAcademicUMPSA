@@ -13,6 +13,8 @@ import 'Pages/SubjectRegistration/StudentSubject.dart';
 import 'Pages/SubjectRegistration/LecturerSubjectList.dart';
 import 'Pages/SubjectRegistration/LecturerSubjectDetail.dart';
 import 'Pages/CoCurriculumRegistration/StudentActivityList.dart';
+import 'Pages/CoCurriculumRegistration/StudentRegisteredActivity.dart';
+import 'Pages/CoCurriculumRegistration/StudentClaimCredit.dart';
 import 'Pages/CoCurriculumRegistration/AdabManageActivity.dart';
 import 'Pages/CoCurriculumRegistration/AdabAddActivity.dart';
 import 'Pages/Attendance/StudentAttendanceList.dart';
@@ -74,6 +76,8 @@ class MyApp extends StatelessWidget {
         '/student-subject': (ctx) => const StudentSubject(),
         '/student-activities': (ctx) => const StudentActivityList(),
         '/lecturer-subject-list': (ctx) => const LecturerSubjectList(),
+        '/student-registered-activities': (ctx) => const StudentRegisteredActivity(),
+        '/student-claim-credit': (ctx) => const StudentClaimCredit(),
         '/adab-manage-activity': (ctx) => const AdabManageActivity(),
         '/adab-add-activity': (ctx) => const AdabAddActivity(),
         '/lecturer-subject-detail': (ctx) {

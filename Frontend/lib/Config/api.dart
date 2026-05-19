@@ -529,6 +529,31 @@ class ApiService {
       return {'success': false, 'message': 'Error: $e'};
     }
   }
+
+  // LECTURER
+  static Future<Map<String, dynamic>> getLecturerAssignedSubjects() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/lecturer/subjects'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getLecturerSubjectDetail(String subjectCode) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/lecturer/subjects/$subjectCode'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
   
   // ════════════════════════════════════════════════════════════
 // CO-CURRICULUM ACTIVITIES
@@ -640,30 +665,66 @@ static Future<Map<String, dynamic>> deleteActivity(String activityId) async {
     };
   }
 }
-  // LECTURER
-  static Future<Map<String, dynamic>> getLecturerAssignedSubjects() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/lecturer/subjects'),
-        headers: getHeaders(),
-      );
-      return jsonDecode(response.body);
-    } catch (e) {
-      return {'success': false, 'message': 'Error: $e'};
-    }
-  }
 
-  static Future<Map<String, dynamic>> getLecturerSubjectDetail(String subjectCode) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/lecturer/subjects/$subjectCode'),
-        headers: getHeaders(),
-      );
-      return jsonDecode(response.body);
-    } catch (e) {
-      return {'success': false, 'message': 'Error: $e'};
-    }
+// ════════════════════════════════════════════════════════════
+// STUDENT CO-CURRICULUM PARTICIPATION
+// ════════════════════════════════════════════════════════════
+static Future<Map<String, dynamic>> registerActivity({
+  required String activityId,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/participations'),
+      headers: getHeaders(),
+      body: jsonEncode({
+        'Activity_ID': activityId,
+      }),
+    );
+
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error: $e',
+    };
   }
+}
+
+static Future<Map<String, dynamic>> getStudentParticipations() async {
+  try {
+    final response = await http.get(
+      Uri.parse('$baseUrl/student/participations'),
+      headers: getHeaders(),
+    );
+
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error: $e',
+    };
+  }
+}
+
+static Future<Map<String, dynamic>> withdrawParticipation({
+  required int participationId,
+}) async {
+  try {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/participations/$participationId'),
+      headers: getHeaders(),
+    );
+
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error: $e',
+    };
+  }
+}
+
+  
 
   // ════════════════════════════════════════════════════════════
   // ATTENDANCE
