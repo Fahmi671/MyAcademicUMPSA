@@ -316,6 +316,40 @@ class ApiService {
   }
 
   // ════════════════════════════════════════════════════════════
+  // CREATE BULK SUBJECTS
+  // ════════════════════════════════════════════════════════════
+  static Future<Map<String, dynamic>> createBulkSubjects({
+    required List<Map<String, dynamic>> subjects,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/subjects/bulk'),
+        headers: getHeaders(),
+        body: jsonEncode({
+          'subjects': subjects,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        return data;
+      }
+
+      return {
+        'success': false,
+        'message': data['message'] ?? 'Failed to create subjects',
+        if (data['errors'] != null) 'errors': data['errors'],
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
   // GET REGISTRATION SCHEDULES
   // ════════════════════════════════════════════════════════════
   static Future<Map<String, dynamic>> getSchedules() async {
@@ -446,40 +480,6 @@ class ApiService {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // CREATE BULK SUBJECTS
-  // ════════════════════════════════════════════════════════════
-  static Future<Map<String, dynamic>> createBulkSubjects({
-    required List<Map<String, dynamic>> subjects,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/subjects/bulk'),
-        headers: getHeaders(),
-        body: jsonEncode({
-          'subjects': subjects,
-        }),
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 201) {
-        return data;
-      }
-
-      return {
-        'success': false,
-        'message': data['message'] ?? 'Failed to create subjects',
-        if (data['errors'] != null) 'errors': data['errors'],
-      };
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Error: $e',
-      };
-    }
-  }
-
   // STUDENT
   static Future<Map<String, dynamic>> getStudentAvailableSubjects() async {
     try {
@@ -554,241 +554,241 @@ class ApiService {
       return {'success': false, 'message': 'Error: $e'};
     }
   }
-  
+
   // ════════════════════════════════════════════════════════════
-// CO-CURRICULUM ACTIVITIES
-// ════════════════════════════════════════════════════════════
-static Future<Map<String, dynamic>> getActivities() async {
-  try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/activities'),
-      headers: getHeaders(),
-    );
+  // CO-CURRICULUM ACTIVITIES
+  // ════════════════════════════════════════════════════════════
+  static Future<Map<String, dynamic>> getActivities() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/activities'),
+        headers: getHeaders(),
+      );
 
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Error: $e',
-    };
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
   }
-}
 
-static Future<Map<String, dynamic>> createActivity({
-  required String moduleCode,
-  required String moduleName,
-  required String campus,
-  required String venue,
-  required String activityDate,
-  required String activityTime,
-  required int capacity,
-  required int availableSlots,
-  required String status,
-}) async {
-  try {
-    final response = await http.post(
-      Uri.parse('$baseUrl/activities'),
-      headers: getHeaders(),
-      body: jsonEncode({
-        'Module_Code': moduleCode,
-        'Module_Name': moduleName,
-        'Campus': campus,
-        'Venue': venue,
-        'Activity_Date': activityDate,
-        'Activity_Time': activityTime,
-        'Capacity': capacity,
-        'Available_Slots': availableSlots,
-        'Status': status,
-      }),
-    );
+  static Future<Map<String, dynamic>> createActivity({
+    required String moduleCode,
+    required String moduleName,
+    required String campus,
+    required String venue,
+    required String activityDate,
+    required String activityTime,
+    required int capacity,
+    required int availableSlots,
+    required String status,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/activities'),
+        headers: getHeaders(),
+        body: jsonEncode({
+          'Module_Code': moduleCode,
+          'Module_Name': moduleName,
+          'Campus': campus,
+          'Venue': venue,
+          'Activity_Date': activityDate,
+          'Activity_Time': activityTime,
+          'Capacity': capacity,
+          'Available_Slots': availableSlots,
+          'Status': status,
+        }),
+      );
 
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Error: $e',
-    };
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
   }
-}
 
-static Future<Map<String, dynamic>> updateActivity({
-  required String activityId,
-  required String pusatAdabId,
-  required String moduleCode,
-  required String moduleName,
-  required String campus,
-  required String venue,
-  required String activityDate,
-  required String activityTime,
-  required int capacity,
-  required int availableSlots,
-  required String status,
-}) async {
-  try {
-    final response = await http.put(
-      Uri.parse('$baseUrl/activities/$activityId'),
-      headers: getHeaders(),
-      body: jsonEncode({
-        'Module_Code': moduleCode,
-        'Module_Name': moduleName,
-        'Campus': campus,
-        'Venue': venue,
-        'Activity_Date': activityDate,
-        'Activity_Time': activityTime,
-        'Capacity': capacity,
-        'Available_Slots': availableSlots,
-        'Status': status,
-      }),
-    );
+  static Future<Map<String, dynamic>> updateActivity({
+    required String activityId,
+    required String pusatAdabId,
+    required String moduleCode,
+    required String moduleName,
+    required String campus,
+    required String venue,
+    required String activityDate,
+    required String activityTime,
+    required int capacity,
+    required int availableSlots,
+    required String status,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/activities/$activityId'),
+        headers: getHeaders(),
+        body: jsonEncode({
+          'Module_Code': moduleCode,
+          'Module_Name': moduleName,
+          'Campus': campus,
+          'Venue': venue,
+          'Activity_Date': activityDate,
+          'Activity_Time': activityTime,
+          'Capacity': capacity,
+          'Available_Slots': availableSlots,
+          'Status': status,
+        }),
+      );
 
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Error: $e',
-    };
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
   }
-}
 
-static Future<Map<String, dynamic>> deleteActivity(String activityId) async {
-  try {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/activities/$activityId'),
-      headers: getHeaders(),
-    );
+  static Future<Map<String, dynamic>> deleteActivity(String activityId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/activities/$activityId'),
+        headers: getHeaders(),
+      );
 
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Error: $e',
-    };
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
   }
-}
 
-// ════════════════════════════════════════════════════════════
-// STUDENT CO-CURRICULUM PARTICIPATION
-// ════════════════════════════════════════════════════════════
-static Future<Map<String, dynamic>> registerActivity({
-  required String activityId,
-}) async {
-  try {
-    final response = await http.post(
-      Uri.parse('$baseUrl/participations'),
-      headers: getHeaders(),
-      body: jsonEncode({
-        'Activity_ID': activityId,
-      }),
-    );
+  // ════════════════════════════════════════════════════════════
+  // STUDENT CO-CURRICULUM PARTICIPATION
+  // ════════════════════════════════════════════════════════════
+  static Future<Map<String, dynamic>> registerActivity({
+    required String activityId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/participations'),
+        headers: getHeaders(),
+        body: jsonEncode({
+          'Activity_ID': activityId,
+        }),
+      );
 
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Error: $e',
-    };
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
   }
-}
 
-static Future<Map<String, dynamic>> getStudentParticipations() async {
-  try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/student/participations'),
-      headers: getHeaders(),
-    );
+  static Future<Map<String, dynamic>> getStudentParticipations() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/student/participations'),
+        headers: getHeaders(),
+      );
 
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Error: $e',
-    };
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
   }
-}
 
-static Future<Map<String, dynamic>> withdrawParticipation({
-  required int participationId,
-}) async {
-  try {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/participations/$participationId'),
-      headers: getHeaders(),
-    );
+  static Future<Map<String, dynamic>> withdrawParticipation({
+    required int participationId,
+  }) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/participations/$participationId'),
+        headers: getHeaders(),
+      );
 
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Error: $e',
-    };
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
   }
-}
 
- // ════════════════════════════════════════════════════════════
-// CREDIT CLAIM
-// ════════════════════════════════════════════════════════════
-static Future<Map<String, dynamic>> submitCreditClaim({
-  required int participationId,
-  required String attendanceStatus,
-}) async {
-  try {
-    final response = await http.post(
-      Uri.parse('$baseUrl/claims'),
-      headers: getHeaders(),
-      body: jsonEncode({
-        'Participation_ID': participationId,
-        'Attendance_Status': attendanceStatus,
-      }),
-    );
+  // ════════════════════════════════════════════════════════════
+  // CREDIT CLAIM
+  // ════════════════════════════════════════════════════════════
+  static Future<Map<String, dynamic>> submitCreditClaim({
+    required int participationId,
+    required String attendanceStatus,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/claims'),
+        headers: getHeaders(),
+        body: jsonEncode({
+          'Participation_ID': participationId,
+          'Attendance_Status': attendanceStatus,
+        }),
+      );
 
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Error: $e',
-    };
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
   }
-}
 
-static Future<Map<String, dynamic>> getPendingClaims() async {
-  try {
-    final response = await http.get(
-      Uri.parse('$baseUrl/claims/pending'),
-      headers: getHeaders(),
-    );
+  static Future<Map<String, dynamic>> getPendingClaims() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/claims/pending'),
+        headers: getHeaders(),
+      );
 
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Error: $e',
-    };
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
   }
-}
 
-static Future<Map<String, dynamic>> reviewClaim({
-  required int claimId,
-  required String claimStatus,
-  String? remarks,
-}) async {
-  try {
-    final response = await http.put(
-      Uri.parse('$baseUrl/claims/$claimId/review'),
-      headers: getHeaders(),
-      body: jsonEncode({
-        'Claim_Status': claimStatus,
-        'Remarks': remarks,
-      }),
-    );
+  static Future<Map<String, dynamic>> reviewClaim({
+    required int claimId,
+    required String claimStatus,
+    String? remarks,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/claims/$claimId/review'),
+        headers: getHeaders(),
+        body: jsonEncode({
+          'Claim_Status': claimStatus,
+          'Remarks': remarks,
+        }),
+      );
 
-    return jsonDecode(response.body);
-  } catch (e) {
-    return {
-      'success': false,
-      'message': 'Error: $e',
-    };
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
   }
-} 
 
   // ════════════════════════════════════════════════════════════
   // ATTENDANCE
@@ -887,4 +887,3 @@ static Future<Map<String, dynamic>> reviewClaim({
     }
   }
 }
-
