@@ -23,6 +23,17 @@ class RegistrationScheduleController extends Controller
                 ], 404);
             }
 
+            // Automatically clean up expired schedules (End_Date in the past, or End_Date is today but End_Time is in the past)
+            $today = now()->toDateString();
+            $currentTime = now()->format('H:i:s');
+
+            RegistrationSchedule::where('End_Date', '<', $today)
+                ->orWhere(function ($query) use ($today, $currentTime) {
+                    $query->where('End_Date', $today)
+                          ->where('End_Time', '<', $currentTime);
+                })
+                ->delete();
+
             $schedules = RegistrationSchedule::where(
                 'FacultyRegistrar_ID',
                 $facultyRegistrar->FacultyRegistrar_ID
