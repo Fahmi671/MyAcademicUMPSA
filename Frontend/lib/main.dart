@@ -53,6 +53,7 @@ class MyApp extends StatelessWidget {
     if (role == 'student') return const StudentHomepage();
     if (role == 'lecturer') return const LecturerHomepage();
     if (role == 'facultyregistrar') return const RegistrarHomepage();
+    if (role == 'pusatadab') return const PusatAdabHomepage();
     return const LoginInterface();
   }
 

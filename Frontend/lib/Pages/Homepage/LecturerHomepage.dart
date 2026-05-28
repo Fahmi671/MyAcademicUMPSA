@@ -73,6 +73,7 @@ class AppTextStyles {
 class AppRoutes {
   static const String lecturerHomepage = '/lecturer-homepage';
   static const String lecturerSubjectList = '/lecturer-subject-list';
+  static const String lecturerAttendance = '/lecturer-attendance';
 }
 
 class LecturerHomepage extends StatefulWidget {
@@ -165,6 +166,10 @@ class _LecturerHomepageState extends State<LecturerHomepage> {
   // Navigation & Logout
   void goToSubjectManagement() {
     Navigator.pushNamed(context, AppRoutes.lecturerSubjectList);
+  }
+
+  void goToClassAttendance() {
+    Navigator.pushNamed(context, AppRoutes.lecturerAttendance);
   }
 
   Future<void> handleLogout() async {
@@ -398,7 +403,11 @@ class _LecturerHomepageState extends State<LecturerHomepage> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Container(),
+              child: buildMenuCard(
+                icon: Icons.how_to_reg,
+                label: 'Class\nAttendance',
+                onTap: goToClassAttendance,
+              ),
             ),
           ],
         ),

@@ -48,7 +48,7 @@ class _PusatAdabAttendanceSessionState
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1F3E8A),
+        backgroundColor: const Color(0xFF3F8F3F),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -61,7 +61,7 @@ class _PusatAdabAttendanceSessionState
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF1F3E8A)))
+              child: CircularProgressIndicator(color: Color(0xFF3F8F3F)))
           : _errorMessage.isNotEmpty
               ? Center(
                   child: Text(_errorMessage,
@@ -102,7 +102,7 @@ class _PusatAdabAttendanceSessionState
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF1F3E8A),
+                                        color: Color(0xFF3F8F3F),
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -137,7 +137,7 @@ class _PusatAdabAttendanceSessionState
                                         },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
-                                              const Color(0xFF1F3E8A),
+                                              const Color(0xFF3F8F3F),
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
                                                 BorderRadius.circular(8),

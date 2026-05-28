@@ -148,7 +148,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK', style: TextStyle(color: Color(0xFF1F3E8A))),
+            child: const Text('OK', style: TextStyle(color: Color(0xFF3F8F3F))),
           ),
         ],
       ),
@@ -160,7 +160,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1F3E8A),
+        backgroundColor: const Color(0xFF3F8F3F),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -173,7 +173,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF1F3E8A)))
+              child: CircularProgressIndicator(color: Color(0xFF3F8F3F)))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -184,7 +184,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1F3E8A),
+                      color: const Color(0xFF3F8F3F),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
@@ -244,7 +244,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                             style: const TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF1F3E8A),
+                              color: Color(0xFF3F8F3F),
                               letterSpacing: 6,
                             ),
                           ),
@@ -256,16 +256,16 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                             onPressed: _isGenerating ? null : generateCode,
                             style: OutlinedButton.styleFrom(
                               side:
-                                  const BorderSide(color: Color(0xFF1F3E8A)),
+                                  const BorderSide(color: Color(0xFF3F8F3F)),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8)),
                             ),
                             child: _isGenerating
                                 ? const CircularProgressIndicator(
-                                    color: Color(0xFF1F3E8A))
+                                    color: Color(0xFF3F8F3F))
                                 : const Text('Generate Code',
                                     style:
-                                        TextStyle(color: Color(0xFF1F3E8A))),
+                                        TextStyle(color: Color(0xFF3F8F3F))),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -284,7 +284,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                                   setState(() => _timeLimit--);
                               },
                               icon: const Icon(Icons.remove_circle_outline,
-                                  color: Color(0xFF1F3E8A)),
+                                  color: Color(0xFF3F8F3F)),
                             ),
                             Text(
                               '$_timeLimit:00 Minutes',
@@ -294,7 +294,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                             IconButton(
                               onPressed: () => setState(() => _timeLimit++),
                               icon: const Icon(Icons.add_circle_outline,
-                                  color: Color(0xFF1F3E8A)),
+                                  color: Color(0xFF3F8F3F)),
                             ),
                           ],
                         ),
@@ -352,12 +352,12 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                             onPressed: fetchAttendanceList,
                             style: OutlinedButton.styleFrom(
                               side:
-                                  const BorderSide(color: Color(0xFF1F3E8A)),
+                                  const BorderSide(color: Color(0xFF3F8F3F)),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8)),
                             ),
                             child: const Text('View Attendance List',
-                                style: TextStyle(color: Color(0xFF1F3E8A))),
+                                style: TextStyle(color: Color(0xFF3F8F3F))),
                           ),
                         ),
                       ],
@@ -372,7 +372,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                       style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1F3E8A)),
+                          color: Color(0xFF3F8F3F)),
                     ),
                     Text(
                       'Code: $_attendanceCode',
@@ -400,7 +400,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                           child: Row(
                             children: [
                               CircleAvatar(
-                                backgroundColor: const Color(0xFF1F3E8A),
+                                backgroundColor: const Color(0xFF3F8F3F),
                                 child: Text(
                                   '${index + 1}',
                                   style: const TextStyle(
@@ -455,7 +455,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                       style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1F3E8A)),
+                          color: Color(0xFF3F8F3F)),
                     ),
                   ],
                 ],
