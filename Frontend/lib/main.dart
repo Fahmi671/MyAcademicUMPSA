@@ -137,8 +137,11 @@ class MyApp extends StatelessWidget {
         },
         '/pusat-adab-attendance': (ctx) => const PusatAdabAttendanceSession(),
         '/pusat-adab-attendance-list': (ctx) {
-          final sessionId = ModalRoute.of(ctx)?.settings.arguments as int?;
-          return sessionId != null ? PusatAdabAttendanceList(sessionId: sessionId) : const PusatAdabAttendanceSession();
+          final rawActivityId = ModalRoute.of(ctx)?.settings.arguments;
+          final activityId = rawActivityId?.toString();
+          return activityId != null && activityId.isNotEmpty
+              ? PusatAdabAttendanceList(activityId: activityId)
+              : const PusatAdabAttendanceSession();
         },
 
       },

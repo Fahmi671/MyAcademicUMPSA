@@ -221,7 +221,7 @@ class _StudentAttendanceListState extends State<StudentAttendanceList> {
                                             '/student-checkin',
                                             arguments: widget.isActivity
                                                 ? {
-                                                    'activity_id': activity['Activity_ID'],
+                                                    'activity_id': activity['Activity_ID'] ?? activity['id'],
                                                     'subject_id': null,
                                                     'subject_code': code,
                                                     'subject_name': name,

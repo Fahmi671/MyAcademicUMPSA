@@ -5,131 +5,309 @@ use Illuminate\Http\Request;
 use App\Models\AttendanceSession;
 use App\Models\AttendanceRecord;
 use App\Models\SubjectEnrollment;
-use Illuminate\Support\Str;
+use App\Models\Participation;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class AttendanceController extends Controller
 {
-    // Lecturer/PusatAdab: Get sessions by subject or activity
+    // Lecturer/Pusat Adab: Get attendance sessions
     public function getSessions(Request $request)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        if ($user->User_Role === 'lecturer') {
-            $sessions = AttendanceSession::with('subject')
-                ->where('session_type', 'class')
-                ->whereHas('subject', function ($q) use ($user) {
-                    $q->where('Lecturer_ID', $user->lecturer->Lecturer_ID);
-                })->get();
-        } else {
-            $sessions = AttendanceSession::where('session_type', 'activity')->get();
+            if ($user->User_Role === 'lecturer') {
+                $lecturer = $user->lecturer;
+
+                $sessions = AttendanceSession::with('subject')
+                    ->where('session_type', 'class')
+                    ->when($lecturer, function ($q) use ($lecturer) {
+                        $q->whereHas('subject', function ($subjectQuery) use ($lecturer) {
+                            $subjectQuery->where('Lecturer_ID', $lecturer->Lecturer_ID);
+                        });
+                    })
+                    ->latest('opened_at')
+                    ->get();
+            } else {
+                $sessions = AttendanceSession::where('session_type', 'activity')
+                    ->latest('opened_at')
+                    ->get();
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $sessions,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch attendance sessions',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json($sessions);
     }
 
-    // Lecturer/PusatAdab: Generate attendance code and open session
+    // Lecturer/Pusat Adab: Generate attendance code and open session
     public function openSession(Request $request)
     {
-        $request->validate([
-            'subject_id'   => 'nullable|integer',
-            'activity_id'  => 'nullable|integer',
-            'session_type' => 'required|in:class,activity',
-            'time_limit'   => 'required|integer|min:1',
-        ]);
+        try {
+            $request->validate([
+                'subject_id'   => 'nullable|integer|required_without:activity_id',
+                'activity_id'  => 'nullable|string|required_without:subject_id',
+                'session_type' => 'required|in:class,activity',
+                'time_limit'   => 'required|integer|min:1',
+            ]);
 
-        $code = strtoupper(Str::random(6));
+            // Close previous open session for the same class/activity so only the latest code is valid.
+            AttendanceSession::where('session_type', $request->session_type)
+                ->when($request->session_type === 'class', function ($q) use ($request) {
+                    $q->where('subject_id', $request->subject_id);
+                })
+                ->when($request->session_type === 'activity', function ($q) use ($request) {
+                    $q->where('activity_id', $request->activity_id);
+                })
+                ->where('status', 'open')
+                ->update(['status' => 'closed']);
 
-        $session = AttendanceSession::create([
-            'subject_id'      => $request->subject_id,
-            'activity_id'     => $request->activity_id,
-            'session_type'    => $request->session_type,
-            'attendance_code' => $code,
-            'time_limit'      => $request->time_limit,
-            'status'          => 'open',
-            'opened_at'       => Carbon::now(),
-        ]);
+            $session = AttendanceSession::create([
+                'subject_id'      => $request->subject_id,
+                'activity_id'     => $request->activity_id,
+                'session_type'    => $request->session_type,
+                'attendance_code' => strtoupper(Str::random(6)),
+                'time_limit'      => $request->time_limit,
+                'status'          => 'open',
+                'opened_at'       => Carbon::now(),
+            ]);
 
-        return response()->json($session, 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Attendance session opened successfully',
+                'data' => $session,
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to open attendance session',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
-    // Lecturer/PusatAdab: Close session
     public function closeSession($session_id)
     {
-        $session = AttendanceSession::findOrFail($session_id);
-        $session->update(['status' => 'closed']);
-        return response()->json(['message' => 'Session closed']);
+        try {
+            $session = AttendanceSession::findOrFail($session_id);
+            $session->update(['status' => 'closed']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Session closed',
+                'data' => $session,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to close session',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
-    // Lecturer/PusatAdab: View attendance list
+    // Lecturer/Pusat Adab: View attendance list
     public function getAttendanceList($session_id)
     {
-        $records = AttendanceRecord::with('student.user')
-            ->where('session_id', $session_id)
-            ->get();
+        try {
+            $records = AttendanceRecord::with('student.user')
+                ->where('session_id', $session_id)
+                ->orderBy('check_in_time', 'desc')
+                ->get();
 
-        return response()->json($records);
+            return response()->json([
+                'success' => true,
+                'data' => $records,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch attendance list',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
-    // Student: Get registered classes with session status
+    // Student: Get registered classes and mark whether each class has an open attendance session.
     public function getStudentClasses(Request $request)
     {
-        $user = $request->user();
-        $student = $user->student;
+        try {
+            $student = $request->user()->student;
 
-        $enrollments = SubjectEnrollment::with(['subject', 'subject.attendanceSessions'])
-            ->where('Student_ID', $student->Student_ID)
-            ->get();
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student profile not found',
+                ], 404);
+            }
 
-        return response()->json($enrollments);
+            $enrollments = SubjectEnrollment::with('subject')
+                ->where('Student_ID', $student->Student_ID)
+                ->get()
+                ->map(function ($enrollment) {
+                    $activeSession = null;
+
+                    if ($enrollment->subject) {
+                        $activeSession = AttendanceSession::where('session_type', 'class')
+                            ->where('subject_id', $enrollment->subject->Subject_ID)
+                            ->where('status', 'open')
+                            ->latest('opened_at')
+                            ->first();
+                    }
+
+                    $enrollment->has_active_session = $activeSession !== null;
+                    $enrollment->session_status = $activeSession ? 'open' : 'closed';
+                    $enrollment->active_session_id = $activeSession?->id;
+
+                    return $enrollment;
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $enrollments,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch registered classes',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
-    // Student: Check in attendance
+    // Student: Check in attendance for class or activity
     public function checkIn(Request $request)
     {
-        $request->validate([
-            'attendance_code' => 'required|string',
-            'subject_id'      => 'nullable|integer',
-            'latitude'        => 'nullable|numeric',
-            'longitude'       => 'nullable|numeric',
-        ]);
+        try {
+            $request->validate([
+                'attendance_code' => 'required|string',
+                'subject_id'      => 'nullable|integer',
+                'activity_id'     => 'nullable|string',
+                'latitude'        => 'nullable|numeric',
+                'longitude'       => 'nullable|numeric',
+            ]);
 
-        $user = $request->user();
-        $student = $user->student;
+            $user = $request->user();
+            $student = $user->student;
 
-        // Find open session by code
-        $session = AttendanceSession::where('attendance_code', $request->attendance_code)
-            ->where('status', 'open')
-            ->first();
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student profile not found',
+                ], 404);
+            }
 
-        if (!$session) {
-            return response()->json(['message' => 'Invalid attendance code'], 422);
+            $session = AttendanceSession::where('attendance_code', strtoupper($request->attendance_code))
+                ->where('status', 'open')
+                ->first();
+
+            if (!$session) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid attendance code',
+                ], 422);
+            }
+
+            if ($session->subject_id && (int) $request->subject_id !== (int) $session->subject_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid attendance code for this class',
+                ], 422);
+            }
+
+            if ($session->activity_id && (string) $request->activity_id !== (string) $session->activity_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid attendance code for this activity',
+                ], 422);
+            }
+
+            $expiry = Carbon::parse($session->opened_at)->addMinutes($session->time_limit);
+            if (Carbon::now()->greaterThan($expiry)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Attendance session has expired',
+                ], 422);
+            }
+
+            if ($session->session_type === 'class') {
+                $registered = SubjectEnrollment::where('Student_ID', $student->Student_ID)
+                    ->where('Subject_ID', $session->subject_id)
+                    ->exists();
+
+                if (!$registered) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Student is not registered for this class',
+                    ], 422);
+                }
+            }
+
+            if ($session->session_type === 'activity') {
+                // Some existing Module 2 code stores Student_ID using User_ID, so this accepts both to connect safely.
+                $registered = Participation::whereIn('Student_ID', [$student->Student_ID, (string) $user->User_ID, $user->User_ID])
+                    ->where('Activity_ID', (string) $session->activity_id)
+                    ->where('Registration_Status', 'Registered')
+                    ->exists();
+
+                if (!$registered) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Student is not registered for this activity',
+                    ], 422);
+                }
+            }
+
+            $existing = AttendanceRecord::where('session_id', $session->id)
+                ->where('student_id', $student->Student_ID)
+                ->first();
+
+            if ($existing) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Attendance already recorded',
+                ], 422);
+            }
+
+            $record = AttendanceRecord::create([
+                'session_id'    => $session->id,
+                'student_id'    => $student->Student_ID,
+                'check_in_time' => Carbon::now(),
+                'latitude'      => $request->latitude,
+                'longitude'     => $request->longitude,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attendance recorded successfully',
+                'data' => $record,
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Attendance submission failed',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // Check time limit
-        $expiry = Carbon::parse($session->opened_at)->addMinutes($session->time_limit);
-        if (Carbon::now()->greaterThan($expiry)) {
-            return response()->json(['message' => 'Attendance session has expired'], 422);
-        }
-
-        // Check duplicate
-        $existing = AttendanceRecord::where('session_id', $session->id)
-            ->where('student_id', $student->Student_ID)
-            ->first();
-
-        if ($existing) {
-            return response()->json(['message' => 'Attendance already recorded'], 422);
-        }
-
-        // Save attendance
-        $record = AttendanceRecord::create([
-            'session_id'    => $session->id,
-            'student_id'    => $student->Student_ID,
-            'check_in_time' => Carbon::now(),
-            'latitude'      => $request->latitude,
-            'longitude'     => $request->longitude,
-        ]);
-
-        return response()->json(['message' => 'Attendance recorded successfully', 'record' => $record], 201);
     }
 }

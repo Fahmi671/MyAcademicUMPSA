@@ -496,7 +496,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getStudentEnrollments() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/student/enrollments'),
+        Uri.parse('$baseUrl/student/classes'),
         headers: getHeaders(),
       );
       return jsonDecode(response.body);
@@ -796,7 +796,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getStudentClasses() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/student/enrollments'),
+        Uri.parse('$baseUrl/student/classes'),
         headers: getHeaders(),
       );
       return jsonDecode(response.body);
@@ -820,7 +820,7 @@ class ApiService {
   static Future<Map<String, dynamic>> checkInAttendance({
     required String attendanceCode,
     int? subjectId,
-    int? activityId,
+    dynamic activityId,
   }) async {
     try {
       final response = await http.post(
@@ -842,7 +842,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> createAttendanceSession({
     required int? subjectId,
-    required int? activityId,
+    required dynamic activityId,
     required String sessionType,
     required int timeLimit,
   }) async {
@@ -875,7 +875,7 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> getActivityDetail(int activityId) async {
+  static Future<Map<String, dynamic>> getActivityDetail(dynamic activityId) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/activities/$activityId'),
