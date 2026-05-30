@@ -179,7 +179,7 @@ class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession>
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
-                                'Select Activity Session\nGreen card = active attendance session\nGrey card = inactive / no open session',
+                                'Select Activity Session\nOpen Attendance for an active activity session',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.black,
