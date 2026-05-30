@@ -26,8 +26,14 @@ class _StudentCheckInState extends State<StudentCheckIn> {
     super.dispose();
   }
 
+  int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
+  }
+
   Future<void> submitAttendance() async {
-    final code = _codeController.text.trim();
+    final code = _codeController.text.trim().replaceAll(RegExp(r'\s+'), '');
     if (code.isEmpty) {
       showResultDialog(
         isSuccess: false,
@@ -46,7 +52,8 @@ class _StudentCheckInState extends State<StudentCheckIn> {
     try {
       final result = await ApiService.checkInAttendance(
         attendanceCode: code,
-        subjectId: widget.sessionData['subject_id'],
+        sessionId: _toInt(widget.sessionData['session_id']),
+        subjectId: _toInt(widget.sessionData['subject_id']),
         activityId: widget.sessionData['activity_id'],
       );
       setState(() => _isLoading = false);
@@ -110,7 +117,7 @@ class _StudentCheckInState extends State<StudentCheckIn> {
         icon: Icons.cancel,
         iconColor: Colors.red,
         title: 'Invalid Attendance Code',
-        message: 'The Code entered is Invalid. Please try again',
+        message: msg,
         buttonLabel: 'Try Again',
         isRetry: false,
       );
@@ -270,6 +277,9 @@ class _StudentCheckInState extends State<StudentCheckIn> {
                 title: 'Attendance Code',
                 child: TextField(
                   controller: _codeController,
+                  textCapitalization: TextCapitalization.none,
+                  autocorrect: false,
+                  enableSuggestions: false,
                   style: const TextStyle(
                     fontSize: 12,
                     color: Colors.black,

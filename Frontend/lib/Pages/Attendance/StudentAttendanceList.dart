@@ -41,8 +41,13 @@ class _StudentAttendanceListState extends State<StudentAttendanceList> {
           : await ApiService.getStudentClasses();
 
       if (result['success'] == true) {
+        final rawData = (result['data'] ?? []) as List<dynamic>;
+        final cleanedData = widget.isActivity
+            ? rawData
+            : _removeDuplicateClassCards(rawData);
+
         setState(() {
-          _enrollments = result['data'] ?? [];
+          _enrollments = cleanedData;
           _isLoading = false;
         });
       } else {
@@ -78,6 +83,44 @@ class _StudentAttendanceListState extends State<StudentAttendanceList> {
         item['active_session'] != null;
   }
 
+  List<dynamic> _removeDuplicateClassCards(List<dynamic> items) {
+    final Map<String, dynamic> uniqueMap = {};
+
+    for (final item in items) {
+      if (item is! Map) continue;
+
+      final subject = item['subject'];
+      final subjectCode = _text(
+        subject?['Subject_Code'] ?? item['Subject_Code'],
+        '',
+      );
+      final subjectName = _text(subject?['Subject_Name'], '');
+
+      // Use subject code + name as the display key.
+      // This prevents the same subject from appearing twice when test data has
+      // multiple sections with the same code/name. If one of them has an active
+      // attendance session, keep the active one.
+      final key = '${subjectCode.toLowerCase()}|${subjectName.toLowerCase()}';
+
+      if (key.trim() == '|') continue;
+
+      if (!uniqueMap.containsKey(key)) {
+        uniqueMap[key] = item;
+      } else {
+        final currentItem = uniqueMap[key];
+        final newIsActive = _isActive(item);
+        final currentIsActive = _isActive(currentItem);
+
+        // Prefer the active class card. If both are inactive, keep the first one.
+        if (newIsActive && !currentIsActive) {
+          uniqueMap[key] = item;
+        }
+      }
+    }
+
+    return uniqueMap.values.toList();
+  }
+
   void _openCheckIn(Map<String, dynamic> data) {
     Navigator.pushNamed(
       context,
@@ -88,7 +131,9 @@ class _StudentAttendanceListState extends State<StudentAttendanceList> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.isActivity ? 'Activity Attendance' : 'Class Attendance';
+    final title = widget.isActivity
+        ? 'Activity Attendance'
+        : 'Class Attendance';
     final emptyText = widget.isActivity
         ? 'No registered activities found.'
         : 'No registered classes found.';
@@ -148,137 +193,150 @@ class _StudentAttendanceListState extends State<StudentAttendanceList> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: _headerBlue))
           : _errorMessage.isNotEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      _errorMessage,
-                      style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  _errorMessage,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          : _enrollments.isEmpty
+          ? Center(
+              child: Text(
+                emptyText,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            )
+          : RefreshIndicator(
+              color: _headerBlue,
+              onRefresh: fetchData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(10, 10, 10, 16),
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: _panelGrey,
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(
+                      color: const Color(0xFF8E8E8E),
+                      width: 3,
                     ),
                   ),
-                )
-              : _enrollments.isEmpty
-                  ? Center(
-                      child: Text(
-                        emptyText,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
+                  child: Column(
+                    children: [
+                      _InstructionCard(text: instructionText),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(8, 0, 8, 9),
+                        itemCount: _enrollments.length,
+                        itemBuilder: (context, index) {
+                          final item = _enrollments[index];
+                          final subject = item['subject'];
+                          final activity = item['activity'] ?? item;
+                          final activeSession = item['active_session'];
+                          final isActive = _isActive(item);
+
+                          final code = widget.isActivity
+                              ? _text(activity['Module_Code'], '')
+                              : _text(subject?['Subject_Code'], '');
+                          final name = widget.isActivity
+                              ? _text(activity['Module_Name'])
+                              : _text(subject?['Subject_Name']);
+
+                          final section = widget.isActivity
+                              ? ''
+                              : _text(subject?['Section']);
+                          final lab = widget.isActivity
+                              ? ''
+                              : _text(subject?['Lab']);
+
+                          final line1 = widget.isActivity
+                              ? 'Date: ${_text(activity['Activity_Date'])}'
+                              : 'Lecturer: ${_text(subject?['Lecturer'])}';
+                          final line2 = widget.isActivity
+                              ? 'Time: ${_text(activity['Activity_Time'])}'
+                              : '${_text(subject?['Day'])}, ${_text(subject?['Time'])}';
+                          final line3 = widget.isActivity
+                              ? 'Venue: ${_text(activity['Venue'])}'
+                              : 'Room: ${_text(subject?['Venue'])}';
+
+                          final subjectId = widget.isActivity
+                              ? null
+                              : _toInt(
+                                  activeSession?['subject_id'] ??
+                                      subject?['Subject_ID'],
+                                );
+                          final activityId = widget.isActivity
+                              ? (activeSession?['activity_id'] ??
+                                    activity['Activity_ID'] ??
+                                    activity['id'])
+                              : null;
+
+                          return _AttendanceCard(
+                            code: code,
+                            name: name,
+                            section: section,
+                            lab: lab,
+                            line1: line1,
+                            line2: line2,
+                            line3: line3,
+                            isActivity: widget.isActivity,
+                            isActive: isActive,
+                            onCheckIn: isActive
+                                ? () {
+                                    _openCheckIn(
+                                      widget.isActivity
+                                          ? {
+                                              'activity_id': activityId,
+                                              'subject_id': null,
+                                              'session_id':
+                                                  activeSession?['id'],
+                                              'subject_code': code,
+                                              'subject_name': name,
+                                              'lecturer': '-',
+                                              'day': _text(
+                                                activity['Activity_Date'],
+                                              ),
+                                              'time': _text(
+                                                activity['Activity_Time'],
+                                              ),
+                                              'room': _text(activity['Venue']),
+                                            }
+                                          : {
+                                              'subject_id': subjectId,
+                                              'activity_id': null,
+                                              'session_id':
+                                                  activeSession?['id'],
+                                              'subject_code': code,
+                                              'subject_name': name,
+                                              'lecturer': _text(
+                                                subject?['Lecturer'],
+                                              ),
+                                              'day': _text(subject?['Day']),
+                                              'time': _text(subject?['Time']),
+                                              'room': _text(subject?['Venue']),
+                                              'section': section,
+                                              'lab': lab,
+                                            },
+                                    );
+                                  }
+                                : null,
+                          );
+                        },
                       ),
-                    )
-                  : RefreshIndicator(
-                      color: _headerBlue,
-                      onRefresh: fetchData,
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(10, 10, 10, 16),
-                        child: Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: _panelGrey,
-                            borderRadius: BorderRadius.circular(13),
-                            border: Border.all(
-                              color: const Color(0xFF8E8E8E),
-                              width: 3,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              _InstructionCard(text: instructionText),
-                              ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                padding: const EdgeInsets.fromLTRB(8, 0, 8, 9),
-                                itemCount: _enrollments.length,
-                                itemBuilder: (context, index) {
-                                  final item = _enrollments[index];
-                                  final subject = item['subject'];
-                                  final activity = item['activity'] ?? item;
-                                  final activeSession = item['active_session'];
-                                  final isActive = _isActive(item);
-
-                                  final code = widget.isActivity
-                                      ? _text(activity['Module_Code'], '')
-                                      : _text(subject?['Subject_Code'], '');
-                                  final name = widget.isActivity
-                                      ? _text(activity['Module_Name'])
-                                      : _text(subject?['Subject_Name']);
-
-                                  final section = widget.isActivity
-                                      ? ''
-                                      : _text(subject?['Section']);
-                                  final lab = widget.isActivity
-                                      ? ''
-                                      : _text(subject?['Lab']);
-
-                                  final line1 = widget.isActivity
-                                      ? 'Date: ${_text(activity['Activity_Date'])}'
-                                      : 'Lecturer: ${_text(subject?['Lecturer'])}';
-                                  final line2 = widget.isActivity
-                                      ? 'Time: ${_text(activity['Activity_Time'])}'
-                                      : '${_text(subject?['Day'])}, ${_text(subject?['Time'])}';
-                                  final line3 = widget.isActivity
-                                      ? 'Venue: ${_text(activity['Venue'])}'
-                                      : 'Room: ${_text(subject?['Venue'])}';
-
-                                  final subjectId = widget.isActivity
-                                      ? null
-                                      : _toInt(activeSession?['subject_id'] ?? subject?['Subject_ID']);
-                                  final activityId = widget.isActivity
-                                      ? (activeSession?['activity_id'] ?? activity['Activity_ID'] ?? activity['id'])
-                                      : null;
-
-                                  return _AttendanceCard(
-                                    code: code,
-                                    name: name,
-                                    section: section,
-                                    lab: lab,
-                                    line1: line1,
-                                    line2: line2,
-                                    line3: line3,
-                                    isActivity: widget.isActivity,
-                                    isActive: isActive,
-                                    onCheckIn: isActive
-                                        ? () {
-                                            _openCheckIn(
-                                              widget.isActivity
-                                                  ? {
-                                                      'activity_id': activityId,
-                                                      'subject_id': null,
-                                                      'session_id': activeSession?['id'],
-                                                      'subject_code': code,
-                                                      'subject_name': name,
-                                                      'lecturer': '-',
-                                                      'day': _text(activity['Activity_Date']),
-                                                      'time': _text(activity['Activity_Time']),
-                                                      'room': _text(activity['Venue']),
-                                                    }
-                                                  : {
-                                                      'subject_id': subjectId,
-                                                      'activity_id': null,
-                                                      'session_id': activeSession?['id'],
-                                                      'subject_code': code,
-                                                      'subject_name': name,
-                                                      'lecturer': _text(subject?['Lecturer']),
-                                                      'day': _text(subject?['Day']),
-                                                      'time': _text(subject?['Time']),
-                                                      'room': _text(subject?['Venue']),
-                                                      'section': section,
-                                                      'lab': lab,
-                                                    },
-                                            );
-                                          }
-                                        : null,
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }
@@ -368,8 +426,14 @@ class _AttendanceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isActive
             ? _StudentAttendanceListState._activeGreen
-            : _StudentAttendanceListState._inactiveGrey,
+            : const Color(0xFFCFCFCF),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isActive
+              ? _StudentAttendanceListState._activeGreen
+              : const Color(0xFF9E9E9E),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,16 +539,16 @@ class _AttendanceCard extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 8,
+                ),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: const Text(
                 'Check In',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
               ),
             ),
           ),

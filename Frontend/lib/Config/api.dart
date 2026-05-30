@@ -819,6 +819,7 @@ class ApiService {
 
   static Future<Map<String, dynamic>> checkInAttendance({
     required String attendanceCode,
+    int? sessionId,
     int? subjectId,
     dynamic activityId,
   }) async {
@@ -827,7 +828,8 @@ class ApiService {
         Uri.parse('$baseUrl/attendance/checkin'),
         headers: getHeaders(),
         body: jsonEncode({
-          'attendance_code': attendanceCode,
+          'attendance_code': attendanceCode.trim(),
+          'session_id': sessionId,
           'subject_id': subjectId,
           'activity_id': activityId,
           'latitude': null,
