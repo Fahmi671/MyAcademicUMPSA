@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../Config/api.dart';
 
@@ -21,17 +22,31 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
   bool _isGenerating = false;
   bool _isOpening = false;
   bool _showAttendanceList = false;
+
   String _attendanceCode = '-';
   String _sessionStatus = 'Closed';
   int _timeLimit = 15;
   int? _sessionId;
+  DateTime? _openedAt;
+  Duration _remaining = Duration.zero;
+  Timer? _timer;
+
   List<dynamic> _attendanceList = [];
   Map<String, dynamic>? _activityInfo;
+
+  bool get _hasActiveSession =>
+      _sessionId != null && _sessionStatus.toLowerCase() == 'open' && _remaining.inSeconds > 0;
 
   @override
   void initState() {
     super.initState();
-    fetchActivityInfo();
+    _loadPageData();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   String _text(dynamic value, [String fallback = '-']) {
@@ -39,25 +54,134 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
     return text.isEmpty ? fallback : text;
   }
 
-  Future<void> fetchActivityInfo() async {
+  DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    final raw = value.toString().trim();
+    if (raw.isEmpty) return null;
+    return DateTime.tryParse(raw) ?? DateTime.tryParse(raw.replaceFirst(' ', 'T'));
+  }
+
+  String _formatDuration(Duration duration) {
+    final safe = duration.isNegative ? Duration.zero : duration;
+    final minutes = safe.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = safe.inSeconds.remainder(60).toString().padLeft(2, '0');
+    if (safe.inHours > 0) {
+      final hours = safe.inHours.toString().padLeft(2, '0');
+      return '$hours:$minutes:$seconds';
+    }
+    return '$minutes:$seconds';
+  }
+
+  void _applySession(Map<String, dynamic>? session) {
+    _timer?.cancel();
+    _timer = null;
+
+    if (session == null || session.isEmpty) {
+      _sessionId = null;
+      _attendanceCode = '-';
+      _sessionStatus = 'Closed';
+      _openedAt = null;
+      _remaining = Duration.zero;
+      return;
+    }
+
+    final status = _text(session['status'], 'closed');
+    final openedAt = _parseDateTime(session['opened_at']);
+    final limit = int.tryParse(_text(session['time_limit'], '15')) ?? 15;
+    final id = session['id'];
+
+    _sessionId = id is int ? id : int.tryParse(id.toString());
+    _attendanceCode = _text(session['attendance_code']);
+    _sessionStatus = status.toLowerCase() == 'open' ? 'Open' : 'Closed';
+    _timeLimit = limit;
+    _openedAt = openedAt;
+
+    if (_sessionStatus == 'Open' && openedAt != null) {
+      _remaining = openedAt.add(Duration(minutes: limit)).difference(DateTime.now());
+      if (_remaining.inSeconds <= 0) {
+        _sessionStatus = 'Closed';
+        _remaining = Duration.zero;
+        return;
+      }
+      _startTimer();
+    } else {
+      _remaining = Duration.zero;
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || _openedAt == null) return;
+      final updated = _openedAt!.add(Duration(minutes: _timeLimit)).difference(DateTime.now());
+      if (updated.inSeconds <= 0) {
+        setState(() {
+          _remaining = Duration.zero;
+          _sessionStatus = 'Closed';
+        });
+        _timer?.cancel();
+      } else {
+        setState(() => _remaining = updated);
+      }
+    });
+  }
+
+  Future<void> _loadPageData() async {
+    setState(() => _isLoading = true);
+    await fetchActivityInfo(showLoading: false);
+    await fetchCurrentSession(showLoading: false);
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> fetchActivityInfo({bool showLoading = true}) async {
     try {
       final result = await ApiService.getActivityDetail(widget.activityId);
       if (result['success'] == true) {
-        setState(() {
-          _activityInfo = Map<String, dynamic>.from(result['data'] ?? {});
-          _isLoading = false;
-        });
-      } else {
-        setState(() => _isLoading = false);
+        _activityInfo = Map<String, dynamic>.from(result['data'] ?? {});
+      } else if (mounted) {
         showMessage(result['message'] ?? 'Activity not found.', false);
       }
     } catch (e) {
-      setState(() => _isLoading = false);
-      showMessage('Connection error. Please try again.', false);
+      if (mounted) showMessage('Connection error. Please try again.', false);
+    } finally {
+      if (mounted && showLoading) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> fetchCurrentSession({bool showLoading = true}) async {
+    try {
+      final result = await ApiService.getAttendanceSessions();
+      if (result['success'] == true) {
+        final sessions = (result['data'] as List?) ?? [];
+        Map<String, dynamic>? current;
+        for (final item in sessions) {
+          final s = Map<String, dynamic>.from(item as Map);
+          if (_text(s['session_type']) == 'activity' && _text(s['activity_id']) == widget.activityId) {
+            final status = _text(s['status']).toLowerCase();
+            if (status == 'open') {
+              current = s;
+              break;
+            }
+            current ??= s;
+          }
+        }
+        if (mounted) {
+          setState(() => _applySession(current));
+        }
+      }
+    } catch (_) {
+      // Keep the page usable even if refresh fails.
+    } finally {
+      if (mounted && showLoading) setState(() => _isLoading = false);
     }
   }
 
   Future<void> generateCode() async {
+    if (_hasActiveSession) {
+      showMessage('Attendance code is still active. Please wait until the timer expires before generating a new code.', false);
+      return;
+    }
+
     setState(() => _isGenerating = true);
     try {
       final result = await ApiService.createAttendanceSession(
@@ -70,11 +194,10 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
       if (result['success'] == true) {
         final data = Map<String, dynamic>.from(result['data'] ?? {});
         setState(() {
-          _attendanceCode = data['attendance_code']?.toString() ?? '-';
-          _sessionId = data['id'] is int ? data['id'] : int.tryParse(data['id'].toString());
-          _sessionStatus = data['status']?.toString() ?? 'open';
+          _applySession(data);
           _isGenerating = false;
         });
+        showMessage('Attendance Session Opened\nThe attendance session has been opened', true);
       } else {
         setState(() => _isGenerating = false);
         showMessage(result['message'] ?? 'Failed to generate code', false);
@@ -86,9 +209,9 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
   }
 
   Future<void> openSession() async {
-    if (_sessionId == null) {
-      await generateCode();
-      if (_sessionId == null) return;
+    if (_hasActiveSession) {
+      showMessage('Attendance Session Already Open\nStudents can check in using the current code until the timer expires.', true);
+      return;
     }
 
     setState(() => _isOpening = true);
@@ -103,9 +226,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
       if (result['success'] == true) {
         final data = Map<String, dynamic>.from(result['data'] ?? {});
         setState(() {
-          _sessionStatus = 'Open';
-          _attendanceCode = data['attendance_code']?.toString() ?? _attendanceCode;
-          _sessionId = data['id'] is int ? data['id'] : int.tryParse(data['id'].toString());
+          _applySession(data);
           _isOpening = false;
         });
         showMessage('Attendance Session Opened\nThe attendance session has been opened', true);
@@ -131,8 +252,10 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
     try {
       final result = await ApiService.getAttendanceRecords(_sessionId!);
       if (result['success'] == true) {
+        final data = result['data'];
+        final records = data is Map ? (data['records'] ?? []) : (data ?? []);
         setState(() {
-          _attendanceList = result['data'] ?? [];
+          _attendanceList = records is List ? records : [];
           _isLoading = false;
         });
       } else {
@@ -169,11 +292,11 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
     );
   }
 
-  Widget _smallYellowButton(String text, VoidCallback onPressed, {bool loading = false}) {
+  Widget _smallYellowButton(String text, VoidCallback onPressed, {bool loading = false, bool enabled = true}) {
     return ElevatedButton(
-      onPressed: loading ? null : onPressed,
+      onPressed: (!enabled || loading) ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: _yellow,
+        backgroundColor: enabled ? _yellow : const Color(0xFFC8C8C8),
         foregroundColor: Colors.black,
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -193,6 +316,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
 
   @override
   Widget build(BuildContext context) {
+    final sessionOpen = _hasActiveSession;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
@@ -200,7 +324,7 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, true),
         ),
         centerTitle: true,
         title: const Text(
@@ -208,15 +332,10 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
         ),
-        actions: [
+        actions: const [
           Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Container(
-              width: 30,
-              height: 30,
-              alignment: Alignment.center,
-              child: const Icon(Icons.shield, color: Colors.white, size: 22),
-            ),
+            padding: EdgeInsets.only(right: 12),
+            child: Icon(Icons.shield, color: Colors.white, size: 22),
           ),
         ],
       ),
@@ -259,9 +378,9 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                       ),
                     ),
                     const SizedBox(height: 18),
-                    Align(
+                    const Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('Attendance Code', style: const TextStyle(fontSize: 12, color: Colors.black, fontWeight: FontWeight.w800)),
+                      child: Text('Attendance Code', style: TextStyle(fontSize: 12, color: Colors.black, fontWeight: FontWeight.w800)),
                     ),
                     const SizedBox(height: 6),
                     Container(
@@ -282,7 +401,14 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    _smallYellowButton('Generate code', generateCode, loading: _isGenerating),
+                    _smallYellowButton('Generate code', generateCode, loading: _isGenerating, enabled: !sessionOpen),
+                    if (sessionOpen) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Code locked until timer expires',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade700, fontWeight: FontWeight.w700),
+                      ),
+                    ],
                     const SizedBox(height: 18),
                     const Align(
                       alignment: Alignment.centerLeft,
@@ -300,17 +426,20 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                         children: [
                           IconButton(
                             padding: EdgeInsets.zero,
-                            onPressed: () => setState(() => _timeLimit = (_timeLimit - 5).clamp(5, 120)),
+                            onPressed: sessionOpen ? null : () => setState(() => _timeLimit = (_timeLimit - 5).clamp(5, 120)),
                             icon: const Icon(Icons.remove, color: Colors.black, size: 16),
                           ),
                           Expanded(
                             child: Center(
-                              child: Text('$_timeLimit:00 Minutes', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black)),
+                              child: Text(
+                                sessionOpen ? 'Expires in ${_formatDuration(_remaining)}' : '$_timeLimit:00 Minutes',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black),
+                              ),
                             ),
                           ),
                           IconButton(
                             padding: EdgeInsets.zero,
-                            onPressed: () => setState(() => _timeLimit = (_timeLimit + 5).clamp(5, 120)),
+                            onPressed: sessionOpen ? null : () => setState(() => _timeLimit = (_timeLimit + 5).clamp(5, 120)),
                             icon: const Icon(Icons.add, color: Colors.black, size: 16),
                           ),
                         ],
@@ -324,15 +453,15 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                         children: [
                           TextSpan(
                             text: _sessionStatus,
-                            style: TextStyle(color: _sessionStatus.toLowerCase() == 'open' ? _darkGreen : Colors.red, fontWeight: FontWeight.w900),
+                            style: TextStyle(color: sessionOpen ? _darkGreen : Colors.red, fontWeight: FontWeight.w900),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _smallYellowButton('Open Attendance', openSession, loading: _isOpening),
+                    _smallYellowButton(sessionOpen ? 'Attendance Opened' : 'Open Attendance', openSession, loading: _isOpening, enabled: !sessionOpen),
                     const SizedBox(height: 10),
-                    _smallYellowButton('View Attendance List', fetchAttendanceList),
+                    _smallYellowButton('View Attendance List', fetchAttendanceList, enabled: _sessionId != null),
                     if (_showAttendanceList) ...[
                       const SizedBox(height: 18),
                       Container(
@@ -350,21 +479,37 @@ class _PusatAdabAttendanceListState extends State<PusatAdabAttendanceList> {
                             if (_attendanceList.isEmpty)
                               const Text('No attendance records yet.', style: TextStyle(fontSize: 12, color: Colors.black54))
                             else
-                              ..._attendanceList.map((record) {
+                              ..._attendanceList.asMap().entries.map((entry) {
+                                final index = entry.key + 1;
+                                final record = entry.value;
                                 final student = record['student'];
                                 final user = student is Map ? student['user'] : null;
                                 final name = user is Map
                                     ? _text(user['User_Name'] ?? user['name'], 'Student')
                                     : _text(student?['Student_Name'], 'Student');
+                                final matric = student is Map ? _text(student['Student_ID'] ?? student['Matric_No'], '') : '';
                                 final time = _text(record['check_in_time'], '-');
                                 return Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 6),
                                   child: Row(
                                     children: [
+                                      Text('$index.', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                                      const SizedBox(width: 8),
                                       const Icon(Icons.check_circle, color: _adabGreen, size: 18),
                                       const SizedBox(width: 8),
-                                      Expanded(child: Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
-                                      Text(time, style: const TextStyle(fontSize: 10, color: Colors.black54)),
+                                      Expanded(
+                                        child: Text(
+                                          matric.isEmpty ? name : '$name\n$matric',
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                                        ),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(time, style: const TextStyle(fontSize: 10, color: Colors.black54)),
+                                          const Text('Present', style: TextStyle(fontSize: 10, color: _darkGreen, fontWeight: FontWeight.w900)),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 );

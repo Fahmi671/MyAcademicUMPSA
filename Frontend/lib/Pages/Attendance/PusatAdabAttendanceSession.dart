@@ -12,11 +12,14 @@ class PusatAdabAttendanceSession extends StatefulWidget {
 class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession> {
   static const Color _adabGreen = Color(0xFF4A9448);
   static const Color _cardGreen = Color(0xFF5CB85C);
-  static const Color _softGrey = Color(0xFFE0E0E0);
+  static const Color _activeGreen = Color(0xFFC8EFD0);
+  static const Color _inactiveGrey = Color(0xFFE0E0E0);
+  static const Color _headerGreen = Color(0xFF8BCF86);
   static const Color _yellow = Color(0xFFFFD966);
 
   bool _isLoading = true;
   List<dynamic> _activities = [];
+  Map<String, Map<String, dynamic>> _sessionByActivityId = {};
   String _errorMessage = '';
 
   @override
@@ -26,16 +29,43 @@ class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession>
   }
 
   Future<void> fetchActivities() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
     try {
-      final result = await ApiService.getActivities();
-      if (result['success'] == true) {
+      final activityResult = await ApiService.getActivities();
+      final sessionResult = await ApiService.getAttendanceSessions();
+
+      final Map<String, Map<String, dynamic>> sessionMap = {};
+      if (sessionResult['success'] == true) {
+        final sessions = (sessionResult['data'] as List?) ?? [];
+        for (final item in sessions) {
+          final session = Map<String, dynamic>.from(item as Map);
+          if (_text(session['session_type']) != 'activity') continue;
+          final activityId = _text(session['activity_id'], '');
+          if (activityId.isEmpty) continue;
+
+          final existing = sessionMap[activityId];
+          final isOpen = _isSessionActive(session);
+          final existingOpen = existing == null ? false : _isSessionActive(existing);
+
+          if (existing == null || (isOpen && !existingOpen)) {
+            sessionMap[activityId] = session;
+          }
+        }
+      }
+
+      if (activityResult['success'] == true) {
         setState(() {
-          _activities = result['data'] ?? [];
+          _activities = activityResult['data'] ?? [];
+          _sessionByActivityId = sessionMap;
           _isLoading = false;
         });
       } else {
         setState(() {
-          _errorMessage = result['message'] ?? 'Failed to load activities';
+          _errorMessage = activityResult['message'] ?? 'Failed to load activities';
           _isLoading = false;
         });
       }
@@ -58,6 +88,28 @@ class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession>
     return (id == null || id.isEmpty) ? null : id;
   }
 
+  DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    final raw = value.toString().trim();
+    if (raw.isEmpty) return null;
+    return DateTime.tryParse(raw) ?? DateTime.tryParse(raw.replaceFirst(' ', 'T'));
+  }
+
+  bool _isSessionActive(Map<String, dynamic>? session) {
+    if (session == null) return false;
+    if (_text(session['status']).toLowerCase() != 'open') return false;
+    final openedAt = _parseDateTime(session['opened_at']);
+    final limit = int.tryParse(_text(session['time_limit'], '15')) ?? 15;
+    if (openedAt == null) return true;
+    return openedAt.add(Duration(minutes: limit)).isAfter(DateTime.now());
+  }
+
+  String _activeLabel(Map<String, dynamic>? session) {
+    if (!_isSessionActive(session)) return 'Inactive';
+    final code = _text(session?['attendance_code'], '');
+    return code.isEmpty ? 'Active' : 'Active • Code: $code';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,7 +123,7 @@ class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession>
         ),
         centerTitle: true,
         title: const Text(
-          'Class Attendance',
+          'Co-Curriculum Attendance',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white,
@@ -80,14 +132,13 @@ class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession>
           ),
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Container(
-              width: 30,
-              height: 30,
-              alignment: Alignment.center,
-              child: const Icon(Icons.shield, color: Colors.white, size: 22),
-            ),
+          IconButton(
+            onPressed: fetchActivities,
+            icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: Icon(Icons.shield, color: Colors.white, size: 22),
           ),
         ],
       ),
@@ -111,7 +162,7 @@ class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession>
                       child: Container(
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: _softGrey,
+                          color: _inactiveGrey,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -124,11 +175,11 @@ class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession>
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF8BCF86),
+                                color: _headerGreen,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
-                                'Select Activity Session\nOpen Attendance for an active activity session',
+                                'Select Activity Session\nGreen card = active attendance session\nGrey card = inactive / no open session',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.black,
@@ -144,24 +195,52 @@ class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession>
                                 itemBuilder: (context, index) {
                                   final activity = Map<String, dynamic>.from(_activities[index]);
                                   final activityId = _getActivityId(activity);
+                                  final session = activityId == null ? null : _sessionByActivityId[activityId];
+                                  final active = _isSessionActive(session);
 
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 12),
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: _cardGreen,
+                                      color: active ? _activeGreen : _cardGreen,
                                       borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: active ? _adabGreen : Colors.transparent,
+                                        width: active ? 2 : 0,
+                                      ),
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          '${_text(activity['Module_Code'], '')} ${_text(activity['Module_Name'])}'.trim(),
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.black,
-                                            fontWeight: FontWeight.w800,
-                                          ),
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                '${_text(activity['Module_Code'], '')} ${_text(activity['Module_Name'])}'.trim(),
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: active ? _adabGreen : Colors.grey.shade600,
+                                                borderRadius: BorderRadius.circular(20),
+                                              ),
+                                              child: Text(
+                                                _activeLabel(session),
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                         const SizedBox(height: 3),
                                         Text(
@@ -192,7 +271,7 @@ class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession>
                                         Align(
                                           alignment: Alignment.centerRight,
                                           child: ElevatedButton(
-                                            onPressed: () {
+                                            onPressed: () async {
                                               if (activityId == null) {
                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                   const SnackBar(content: Text('Activity ID not found.')),
@@ -200,11 +279,12 @@ class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession>
                                                 return;
                                               }
 
-                                              Navigator.pushNamed(
+                                              final changed = await Navigator.pushNamed(
                                                 context,
                                                 '/pusat-adab-attendance-list',
                                                 arguments: activityId,
                                               );
+                                              if (changed == true && mounted) fetchActivities();
                                             },
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: _yellow,
@@ -220,9 +300,9 @@ class _PusatAdabAttendanceSessionState extends State<PusatAdabAttendanceSession>
                                               minimumSize: Size.zero,
                                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                             ),
-                                            child: const Text(
-                                              'Manage Session',
-                                              style: TextStyle(
+                                            child: Text(
+                                              active ? 'View / Manage Active Session' : 'Manage Session',
+                                              style: const TextStyle(
                                                 fontSize: 11,
                                                 color: Colors.black,
                                                 fontWeight: FontWeight.w700,

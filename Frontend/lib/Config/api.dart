@@ -808,7 +808,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getStudentRegisteredActivities() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/student/participations'),
+        Uri.parse('$baseUrl/student/activity-attendance'),
         headers: getHeaders(),
       );
       return jsonDecode(response.body);
@@ -840,11 +840,25 @@ class ApiService {
     }
   }
 
+
+  static Future<Map<String, dynamic>> getAttendanceSessions() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/attendance/sessions'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
   static Future<Map<String, dynamic>> createAttendanceSession({
     required int? subjectId,
     required dynamic activityId,
     required String sessionType,
     required int timeLimit,
+    String? sessionStatus,
   }) async {
     try {
       final response = await http.post(
@@ -855,6 +869,7 @@ class ApiService {
           'activity_id': activityId,
           'session_type': sessionType,
           'time_limit': timeLimit,
+          if (sessionStatus != null) 'status': sessionStatus,
         }),
       );
       return jsonDecode(response.body);
