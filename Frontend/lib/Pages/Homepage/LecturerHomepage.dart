@@ -322,23 +322,6 @@ class _LecturerHomepageState extends State<LecturerHomepage> {
           ),
         ],
       ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: Center(
-            child: Image.asset(
-              'assets/images/logo.png',
-              height: 32,
-              width: 32,
-              errorBuilder: (_, _, _) => const Icon(
-                Icons.shield,
-                color: Colors.white70,
-                size: 28,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 

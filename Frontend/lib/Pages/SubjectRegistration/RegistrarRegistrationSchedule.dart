@@ -143,6 +143,57 @@ class _RegistrarRegistrationScheduleState extends State<RegistrarRegistrationSch
     }
   }
 
+  // Delete Confirmation
+  void _showDeleteConfirmation(int scheduleId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Schedule'),
+        content: const Text('Are you sure you want to delete this schedule?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              handleDelete(scheduleId);
+            },
+            child: const Text('Delete', style: TextStyle(color: AppColors.errorRed)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Handle Delete
+  Future<void> handleDelete(int scheduleId) async {
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    final result = await ApiService.deleteSchedule(scheduleId);
+
+    if (result['success'] == true) {
+      await fetchSchedules();
+      setState(() {
+        _successMessage = 'Deleted\nSuccessfully';
+        _isSaving = false;
+      });
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) {
+        setState(() => _successMessage = null);
+      }
+    } else {
+      setState(() {
+        _errorMessage = result['message'] ?? 'Failed to delete schedule';
+        _isSaving = false;
+      });
+    }
+  }
+
   // Check duplicate year
   bool get isDuplicateYearSelected {
     if (_yearOfStudy == null) return false;
@@ -258,27 +309,49 @@ class _RegistrarRegistrationScheduleState extends State<RegistrarRegistrationSch
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
-          columnSpacing: 12,
-          headingRowHeight: 34,
-          dataRowMinHeight: 30,
-          dataRowMaxHeight: 34,
+          columnSpacing: 18,
+          horizontalMargin: 16,
+          headingRowHeight: 40,
+          dataRowMinHeight: 36,
+          dataRowMaxHeight: 44,
+          headingTextStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.labelText,
+          ),
           columns: const [
-            DataColumn(label: Text('No', style: TextStyle(fontSize: 10))),
-            DataColumn(label: Text('Year', style: TextStyle(fontSize: 10))),
-            DataColumn(label: Text('Start Date', style: TextStyle(fontSize: 10))),
-            DataColumn(label: Text('End Date', style: TextStyle(fontSize: 10))),
-            DataColumn(label: Text('Start Time', style: TextStyle(fontSize: 10))),
-            DataColumn(label: Text('End Time', style: TextStyle(fontSize: 10))),
+            DataColumn(label: Text('No')),
+            DataColumn(label: Text('Year')),
+            DataColumn(label: Text('Start Date')),
+            DataColumn(label: Text('End Date')),
+            DataColumn(label: Text('Start Time')),
+            DataColumn(label: Text('End Time')),
+            DataColumn(label: Center(child: Text('Action'))),
           ],
           rows: List.generate(_schedules.length, (i) {
             final s = _schedules[i];
             return DataRow(cells: [
-              DataCell(Text('${i + 1}', style: const TextStyle(fontSize: 10))),
-              DataCell(Text('Year ${s.yearOfStudy}', style: const TextStyle(fontSize: 10))),
-              DataCell(Text(s.startDate, style: const TextStyle(fontSize: 10))),
-              DataCell(Text(s.endDate, style: const TextStyle(fontSize: 10))),
-              DataCell(Text(s.startTime, style: const TextStyle(fontSize: 10))),
-              DataCell(Text(s.endTime, style: const TextStyle(fontSize: 10))),
+              DataCell(Text('${i + 1}', style: const TextStyle(fontSize: 11))),
+              DataCell(Text('Year ${s.yearOfStudy}', style: const TextStyle(fontSize: 11))),
+              DataCell(Text(s.startDate, style: const TextStyle(fontSize: 11))),
+              DataCell(Text(s.endDate, style: const TextStyle(fontSize: 11))),
+              DataCell(Text(s.startTime, style: const TextStyle(fontSize: 11))),
+              DataCell(Text(s.endTime, style: const TextStyle(fontSize: 11))),
+              DataCell(
+                InkWell(
+                  onTap: _isSaving ? null : () => _showDeleteConfirmation(s.scheduleId),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorRed.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.errorRed.withOpacity(0.3)),
+                    ),
+                    child: const Icon(Icons.delete_outline, color: AppColors.errorRed, size: 16),
+                  ),
+                ),
+              ),
             ]);
           }),
         ),
@@ -360,9 +433,9 @@ class _RegistrarRegistrationScheduleState extends State<RegistrarRegistrationSch
               child: const Icon(Icons.check, color: Colors.white, size: 48),
             ),
             const SizedBox(height: 16),
-            const Text('Save\nSuccessfully',
+            Text(_successMessage ?? 'Success',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black)),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black)),
           ],
         ),
       ),
