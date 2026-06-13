@@ -26,8 +26,14 @@ class _StudentCheckInState extends State<StudentCheckIn> {
     super.dispose();
   }
 
+  int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
+  }
+
   Future<void> submitAttendance() async {
-    final code = _codeController.text.trim();
+    final code = _codeController.text.trim().replaceAll(RegExp(r'\s+'), '');
     if (code.isEmpty) {
       showResultDialog(
         isSuccess: false,
@@ -46,7 +52,8 @@ class _StudentCheckInState extends State<StudentCheckIn> {
     try {
       final result = await ApiService.checkInAttendance(
         attendanceCode: code,
-        subjectId: widget.sessionData['subject_id'],
+        sessionId: _toInt(widget.sessionData['session_id']),
+        subjectId: _toInt(widget.sessionData['subject_id']),
         activityId: widget.sessionData['activity_id'],
       );
       setState(() => _isLoading = false);
@@ -110,7 +117,7 @@ class _StudentCheckInState extends State<StudentCheckIn> {
         icon: Icons.cancel,
         iconColor: Colors.red,
         title: 'Invalid Attendance Code',
-        message: 'The Code entered is Invalid. Please try again',
+        message: msg,
         buttonLabel: 'Try Again',
         isRetry: false,
       );
@@ -189,6 +196,8 @@ class _StudentCheckInState extends State<StudentCheckIn> {
     final day = widget.sessionData['day'] ?? '-';
     final time = widget.sessionData['time'] ?? '-';
     final room = widget.sessionData['room'] ?? '-';
+    final section = widget.sessionData['section'] ?? '-';
+    final lab = widget.sessionData['lab'] ?? '-';
 
     return Scaffold(
       backgroundColor: _screenGrey,
@@ -261,12 +270,16 @@ class _StudentCheckInState extends State<StudentCheckIn> {
                 day: day,
                 time: time,
                 room: room,
+                section: section,
+                lab: lab,
               ),
               _FormSection(
                 title: 'Attendance Code',
                 child: TextField(
                   controller: _codeController,
-                  textCapitalization: TextCapitalization.characters,
+                  textCapitalization: TextCapitalization.none,
+                  autocorrect: false,
+                  enableSuggestions: false,
                   style: const TextStyle(
                     fontSize: 12,
                     color: Colors.black,
@@ -460,6 +473,8 @@ class _SubjectCard extends StatelessWidget {
   final String day;
   final String time;
   final String room;
+  final String section;
+  final String lab;
 
   const _SubjectCard({
     required this.subjectCode,
@@ -468,6 +483,8 @@ class _SubjectCard extends StatelessWidget {
     required this.day,
     required this.time,
     required this.room,
+    required this.section,
+    required this.lab,
   });
 
   @override
@@ -500,6 +517,16 @@ class _SubjectCard extends StatelessWidget {
               height: 1.25,
             ),
           ),
+          if (section != '-' || lab != '-')
+            Text(
+              'Section: $section   Lab: $lab',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: Colors.black,
+                height: 1.25,
+              ),
+            ),
           Text(
             'Lecturer: $lecturer',
             style: const TextStyle(

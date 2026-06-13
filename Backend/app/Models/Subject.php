@@ -33,4 +33,9 @@ class Subject extends Model
     {
         return $this->hasMany(SubjectEnrollment::class, 'Subject_ID', 'Subject_ID');
     }
+
+    public function attendanceSessions()
+    {
+        return $this->hasMany(AttendanceSession::class, 'subject_id', 'Subject_ID');
+    }
 }
