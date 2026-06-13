@@ -47,8 +47,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/schedules/{schedule_id}', [RegistrationScheduleController::class, 'destroy']);
 
     // Subject Enrollment routes
-    Route::get('/enrollments/subject/{subject_code}', [SubjectEnrollmentController::class, 'getBySubject']);
-    Route::get('/student/enrollments', [SubjectEnrollmentController::class, 'myEnrollments']);
     Route::get('/student/available-subjects', [SubjectEnrollmentController::class, 'availableSubjects']);
     Route::post('/enrollments', [SubjectEnrollmentController::class, 'store']);
     Route::delete('/enrollments/{enrollment_id}', [SubjectEnrollmentController::class, 'destroy']);

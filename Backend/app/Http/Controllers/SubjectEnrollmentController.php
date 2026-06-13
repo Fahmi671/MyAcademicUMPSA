@@ -12,6 +12,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
+/**
+ * Controller for handling student subject enrollments.
+ * Manages adding/dropping subjects, checking registration schedules,
+ * and enforcing rules like credit limits, class quotas, and time clashes.
+ */
 class SubjectEnrollmentController extends Controller
 {
     private const MAX_CREDIT_HOURS = 18;
@@ -101,25 +106,6 @@ class SubjectEnrollmentController extends Controller
         return max($aStart, $bStart) < min($aEnd, $bEnd);
     }
 
-    // Return enrollments for a subject code.
-    public function getBySubject($subjectCode)
-    {
-        try {
-            $enrollments = SubjectEnrollment::where('Subject_Code', $subjectCode)
-                ->with('student')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'data' => $enrollments,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch enrollments: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
 
     // Add current student enrollment with validation checks.
     public function store(Request $request)
@@ -229,48 +215,6 @@ class SubjectEnrollmentController extends Controller
         }
     }
 
-    // Return current student's enrolled subjects.
-    public function myEnrollments()
-    {
-        try {
-            $user = Auth::user();
-            $student = Student::where('User_ID', $user->User_ID)->first();
-            if (!$student) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Student profile not found',
-                ], 404);
-            }
-
-            $enrollments = SubjectEnrollment::where('Student_ID', $student->Student_ID)
-                ->orderByDesc('Enrollment_ID')
-                ->get();
-
-            $subjectCodes = $enrollments->pluck('Subject_Code')->unique()->values();
-            $subjects = Subject::whereIn('Subject_Code', $subjectCodes)->get()->keyBy('Subject_Code');
-
-            $data = $enrollments->map(function ($enrollment) use ($subjects) {
-                $subject = $subjects->get($enrollment->Subject_Code);
-
-                return [
-                    'Enrollment_ID' => $enrollment->Enrollment_ID,
-                    'Subject_Code' => $enrollment->Subject_Code,
-                    'Enrollment_Date' => $enrollment->Enrollment_Date,
-                    'subject' => $subject,
-                ];
-            })->values();
-
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch student enrollments: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
 
     // Return all subjects available for student registration.
     public function availableSubjects()
