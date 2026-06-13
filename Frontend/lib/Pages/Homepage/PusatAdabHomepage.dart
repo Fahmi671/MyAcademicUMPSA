@@ -311,7 +311,13 @@ class _PusatAdabHomepageState extends State<PusatAdabHomepage> {
                         icon: Icons.groups,
                         title: 'Co-Curriculum\nAttendance',
                         onTap: () {
-                          Navigator.pushNamed(context, '/pusat-adab-attendance');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Co-Curriculum Attendance page will be added later.',
+                              ),
+                            ),
+                          );
                         },
                       ),
                     ],

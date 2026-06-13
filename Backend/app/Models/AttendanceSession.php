@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -16,19 +15,9 @@ class AttendanceSession extends Model
         'opened_at',
     ];
 
-    protected $casts = [
-        'opened_at' => 'datetime',
-        'time_limit' => 'integer',
-    ];
-
     public function subject()
     {
         return $this->belongsTo(Subject::class, 'subject_id', 'Subject_ID');
-    }
-
-    public function activity()
-    {
-        return $this->belongsTo(CoCurriculumActivity::class, 'activity_id', 'Activity_ID');
     }
 
     public function records()

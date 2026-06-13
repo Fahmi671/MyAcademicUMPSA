@@ -31,6 +31,10 @@ class User extends Authenticatable
         'User_Password',
     ];
 
+    // ═══════════════════════════════════════════════════════════
+    //  RELATIONSHIPS
+    // ═══════════════════════════════════════════════════════════
+
     public function student()
     {
         return $this->hasOne(Student::class, 'User_ID');
@@ -46,8 +50,5 @@ class User extends Authenticatable
         return $this->hasOne(FacultyRegistrar::class, 'User_ID');
     }
 
-    public function pusatAdab()
-    {
-        return $this->hasOne(PusatAdab::class, 'User_ID');
-    }
+    
 }

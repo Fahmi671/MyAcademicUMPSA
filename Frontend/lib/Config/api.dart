@@ -496,7 +496,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getStudentEnrollments() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/student/classes'),
+        Uri.parse('$baseUrl/student/enrollments'),
         headers: getHeaders(),
       );
       return jsonDecode(response.body);
@@ -796,7 +796,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getStudentClasses() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/student/classes'),
+        Uri.parse('$baseUrl/student/enrollments'),
         headers: getHeaders(),
       );
       return jsonDecode(response.body);
@@ -808,7 +808,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getStudentRegisteredActivities() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/student/activity-attendance'),
+        Uri.parse('$baseUrl/student/participations'),
         headers: getHeaders(),
       );
       return jsonDecode(response.body);
@@ -819,17 +819,15 @@ class ApiService {
 
   static Future<Map<String, dynamic>> checkInAttendance({
     required String attendanceCode,
-    int? sessionId,
     int? subjectId,
-    dynamic activityId,
+    int? activityId,
   }) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/attendance/checkin'),
         headers: getHeaders(),
         body: jsonEncode({
-          'attendance_code': attendanceCode.trim(),
-          'session_id': sessionId,
+          'attendance_code': attendanceCode,
           'subject_id': subjectId,
           'activity_id': activityId,
           'latitude': null,
@@ -842,25 +840,11 @@ class ApiService {
     }
   }
 
-
-  static Future<Map<String, dynamic>> getAttendanceSessions() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/attendance/sessions'),
-        headers: getHeaders(),
-      );
-      return jsonDecode(response.body);
-    } catch (e) {
-      return {'success': false, 'message': 'Error: $e'};
-    }
-  }
-
   static Future<Map<String, dynamic>> createAttendanceSession({
     required int? subjectId,
-    required dynamic activityId,
+    required int? activityId,
     required String sessionType,
     required int timeLimit,
-    String? sessionStatus,
   }) async {
     try {
       final response = await http.post(
@@ -871,7 +855,6 @@ class ApiService {
           'activity_id': activityId,
           'session_type': sessionType,
           'time_limit': timeLimit,
-          if (sessionStatus != null) 'status': sessionStatus,
         }),
       );
       return jsonDecode(response.body);
@@ -892,7 +875,7 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> getActivityDetail(dynamic activityId) async {
+  static Future<Map<String, dynamic>> getActivityDetail(int activityId) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/activities/$activityId'),

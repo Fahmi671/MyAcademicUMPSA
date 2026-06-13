@@ -80,6 +80,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/attendance/sessions/{session_id}/close', [AttendanceController::class, 'closeSession']);
     Route::get('/attendance/sessions/{session_id}/records', [AttendanceController::class, 'getAttendanceList']);
     Route::get('/student/classes', [AttendanceController::class, 'getStudentClasses']);
-    Route::get('/student/activity-attendance', [AttendanceController::class, 'getStudentActivities']);
     Route::post('/attendance/checkin', [AttendanceController::class, 'checkIn']);
 });
