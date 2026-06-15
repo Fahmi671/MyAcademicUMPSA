@@ -10,37 +10,79 @@ use Illuminate\Support\Facades\DB;
 class ParticipationController extends Controller
 {
     public function myParticipations(Request $request)
-    {
-        try {
-            $user = $request->user();
+{
+    try {
+        $user = $request->user();
 
-            $participations = Participation::where('Student_ID', $user->User_ID)
-                ->join('cocurriculum_activity', 'participation.Activity_ID', '=', 'cocurriculum_activity.Activity_ID')
-                ->select(
-                    'participation.*',
-                    'cocurriculum_activity.Module_Code',
-                    'cocurriculum_activity.Module_Name',
-                    'cocurriculum_activity.Campus',
-                    'cocurriculum_activity.Venue',
-                    'cocurriculum_activity.Activity_Date',
-                    'cocurriculum_activity.Activity_Time',
-                    'cocurriculum_activity.Capacity',
-                    'cocurriculum_activity.Available_Slots'
+        $participations = Participation::where(
+                'participation.Student_ID',
+                $user->User_ID
+            )
+            ->join(
+                'cocurriculum_activity',
+                'participation.Activity_ID',
+                '=',
+                'cocurriculum_activity.Activity_ID'
+            )
+            ->select(
+                'participation.*',
+                'cocurriculum_activity.Module_Code',
+                'cocurriculum_activity.Module_Name',
+                'cocurriculum_activity.Campus',
+                'cocurriculum_activity.Venue',
+                'cocurriculum_activity.Activity_Date',
+                'cocurriculum_activity.Activity_Time',
+                'cocurriculum_activity.Capacity',
+                'cocurriculum_activity.Available_Slots'
+            )
+            ->get();
+
+        foreach ($participations as $participation) {
+            $hasAttendance = DB::table('attendance_records')
+                ->join(
+                    'attendance_sessions',
+                    'attendance_records.session_id',
+                    '=',
+                    'attendance_sessions.id'
                 )
-                ->get();
+                ->where(
+                    'attendance_records.student_id',
+                    $user->User_ID
+                )
+                ->where(
+                    'attendance_sessions.activity_id',
+                    $participation->Activity_ID
+                )
+                ->exists();
 
-            return response()->json([
-                'success' => true,
-                'data' => $participations
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch participations',
-                'error' => $e->getMessage()
-            ], 500);
+            $participation->Attendance_Status =
+                $hasAttendance ? 'Present' : 'Not verified';
+
+            $latestClaim = DB::table('credit_claim')
+                ->where('Participation_ID', $participation->Participation_ID)
+                ->orderByDesc('Claim_ID')
+                ->first();
+
+            $participation->Claim_Status =
+                $latestClaim ? $latestClaim->Claim_Status : 'Not Claimed';
+
+            $participation->Claim_Remarks =
+                $latestClaim ? $latestClaim->Remarks : null;
         }
+
+        return response()->json([
+            'success' => true,
+            'data' => $participations
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch participations',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     public function store(Request $request)
     {

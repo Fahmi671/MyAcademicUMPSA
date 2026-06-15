@@ -11,6 +11,7 @@ class StudentClaimCredit extends StatefulWidget {
 class _StudentClaimCreditState extends State<StudentClaimCredit> {
   final Color blue = const Color(0xFF1F3E8A);
   bool isSubmitting = false;
+  bool statusPopupShown = false;
 
   String valueOf(dynamic item, String key) {
     if (item == null) return '';
@@ -175,6 +176,29 @@ class _StudentClaimCreditState extends State<StudentClaimCredit> {
     final date = valueOf(participation, 'Activity_Date');
     final time = valueOf(participation, 'Activity_Time');
     final registrationStatus = valueOf(participation, 'Registration_Status');
+    final claimStatus = valueOf(participation, 'Claim_Status');
+    final claimRemarks = valueOf(participation, 'Claim_Remarks');
+
+    if (!statusPopupShown &&
+        (claimStatus == 'Approved' || claimStatus == 'Rejected')) {
+      statusPopupShown = true;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        showMessageDialog(
+          title: claimStatus == 'Approved'
+              ? 'Credit Claim Approved'
+              : 'Credit Claim Rejected',
+          message: claimStatus == 'Approved'
+              ? 'Your credit claim has been approved successfully.'
+              : claimRemarks.isNotEmpty
+                  ? 'Your credit claim was rejected.\nRemarks: $claimRemarks'
+                  : 'Your credit claim was rejected.',
+          success: claimStatus == 'Approved',
+        );
+      });
+    }
 
     String attendanceStatus = valueOf(participation, 'Attendance_Status');
 
