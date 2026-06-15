@@ -158,7 +158,17 @@ class SubjectEnrollmentController extends Controller
             }
 
             $currentEnrollments = SubjectEnrollment::where('Student_ID', $student->Student_ID)->get();
-            $currentSubjects = Subject::whereIn('Subject_Code', $currentEnrollments->pluck('Subject_Code')->unique())->get();
+            
+            $currentSubjects = collect();
+            foreach ($currentEnrollments as $enr) {
+                if (!empty($enr->Subject_ID)) {
+                    $s = Subject::find($enr->Subject_ID);
+                    if ($s) $currentSubjects->push($s);
+                } else {
+                    $s = Subject::where('Subject_Code', $enr->Subject_Code)->first();
+                    if ($s) $currentSubjects->push($s);
+                }
+            }
 
             $totalCredits = $currentSubjects->sum('Credit_Hours');
             if (($totalCredits + (int) $subject->Credit_Hours) > self::MAX_CREDIT_HOURS) {
