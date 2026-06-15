@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 
 class RegistrationScheduleController extends Controller
 {
-    // Return all schedules for logged-in faculty registrar.
+    // Return all schedules for faculty registrar.
     public function index()
     {
         try {
@@ -23,7 +23,7 @@ class RegistrationScheduleController extends Controller
                 ], 404);
             }
 
-            // Automatically clean up expired schedules (End_Date in the past, or End_Date is today but End_Time is in the past)
+            // Automatically clean up expired schedules
             $today = now()->toDateString();
             $currentTime = now()->format('H:i:s');
 
@@ -51,7 +51,7 @@ class RegistrationScheduleController extends Controller
         }
     }
 
-    // Create registration schedule for logged-in faculty registrar.
+    // Create registration schedule for faculty registrar.
     public function store(Request $request)
     {
         try {

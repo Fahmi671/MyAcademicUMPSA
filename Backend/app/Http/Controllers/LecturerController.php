@@ -31,7 +31,7 @@ class LecturerController extends Controller
         }
     }
 
-    // Return subjects assigned to logged-in lecturer.
+    // Return subjects assigned to lecturer.
     public function assignedSubjects()
     {
         try {
@@ -62,7 +62,7 @@ class LecturerController extends Controller
         }
     }
 
-    // Return subject detail and enrolled students for logged-in lecturer.
+    // Return subject detail and enrolled students for lecturer.
     public function subjectDetail($subjectCode)
     {
         try {
