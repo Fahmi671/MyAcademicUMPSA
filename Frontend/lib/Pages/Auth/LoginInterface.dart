@@ -79,6 +79,7 @@ class AppRoutes {
   static const String lecturerHomepage = '/lecturer-homepage';
   static const String studentHomepage = '/student-homepage';
   static const String pusatAdabHomepage = '/pusat-adab-homepage';
+  static const String treasuryHomepage = '/treasury-homepage';
   static const String login = '/login';
 }
 
@@ -178,6 +179,10 @@ class _LoginInterfaceState extends State<LoginInterface> {
 
       case 'pusatadab':
         routeName = AppRoutes.pusatAdabHomepage;
+        break;
+
+      case 'treasury':
+        routeName = AppRoutes.treasuryHomepage;
         break;
 
       default:
@@ -326,6 +331,20 @@ class _LoginInterfaceState extends State<LoginInterface> {
                     ),
                     SizedBox(width: 12),
                     Text('Pusat Adab'),
+                  ],
+                ),
+              ),
+              DropdownMenuItem(
+                value: 'treasury',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.account_balance,
+                      size: 20,
+                      color: AppColors.roleIcon,
+                    ),
+                    SizedBox(width: 12),
+                    Text('Treasury'),
                   ],
                 ),
               ),

@@ -903,4 +903,122 @@ class ApiService {
       return {'success': false, 'message': 'Error: $e'};
     }
   }
+
+  // ════════════════════════════════════════════════════════════
+  // MODULE 4: MANAGE TUITION FEES (STUDENT & TREASURY)
+  // ════════════════════════════════════════════════════════════
+
+  static Future<Map<String, dynamic>> getStudentTuitionFee() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/tuition-fee'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> submitPayment(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/payment-transaction'),
+        headers: getHeaders(),
+        body: jsonEncode(data),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyPayment(String billCode) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/toyyibpay-verify'),
+        headers: getHeaders(),
+        body: jsonEncode({'billCode': billCode}),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getNotifications() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/notifications'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> markNotificationAsRead(int notificationId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/notifications/$notificationId/read'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getTreasuryLedger() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/treasury/ledger'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> filterTreasuryLedger(String filter) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/treasury/ledger/filter?filter=$filter'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> searchTreasuryLedger(String studentId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/treasury/ledger/search?student_id=$studentId'),
+        headers: getHeaders(),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> sendTuitionAlert(String studentId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/notifications/send-tuition-alert'),
+        headers: getHeaders(),
+        body: jsonEncode({
+          'Student_ID': studentId,
+          'Message': 'You have an outstanding tuition fee balance. Please settle it to unlock your academic access.',
+        }),
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
 }

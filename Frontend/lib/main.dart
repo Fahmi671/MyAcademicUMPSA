@@ -13,6 +13,7 @@ import 'Pages/Homepage/RegistrarHomepage.dart';
 import 'Pages/Homepage/StudentHomepage.dart';
 import 'Pages/Homepage/LecturerHomepage.dart';
 import 'Pages/Homepage/PusatAdabHomepage.dart';
+import 'Pages/Homepage/TreasuryHomepage.dart';
 
 // Subject Registration
 import 'Pages/SubjectRegistration/RegistrarSubjectList.dart';
@@ -40,6 +41,12 @@ import 'Pages/Attendance/LecturerAttendanceList.dart';
 import 'Pages/Attendance/PusatAdabAttendanceSession.dart';
 import 'Pages/Attendance/PusatAdabAttendanceList.dart';
 
+// Tuition Fees (Module 4)
+import 'Pages/TuitionFees/StudentTuitionFees.dart';
+import 'Pages/TuitionFees/StudentPayTuitionFees.dart';
+import 'Pages/TuitionFees/StudentNotification.dart';
+import 'Pages/TuitionFees/TreasuryStudentLedger.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -66,6 +73,7 @@ class MyApp extends StatelessWidget {
     if (role == 'lecturer') return const LecturerHomepage();
     if (role == 'facultyregistrar') return const RegistrarHomepage();
     if (role == 'pusatadab') return const PusatAdabHomepage();
+    if (role == 'treasury') return const TreasuryHomepage();
     return const LoginInterface();
   }
 
@@ -91,6 +99,7 @@ class MyApp extends StatelessWidget {
         '/student-homepage': (ctx) => const StudentHomepage(),
         '/lecturer-homepage': (ctx) => const LecturerHomepage(),
         '/pusat-adab-homepage': (ctx) => const PusatAdabHomepage(),
+        '/treasury-homepage': (ctx) => const TreasuryHomepage(),
 
         // Subject Registration
         '/student-subject': (ctx) => const StudentSubject(),
@@ -144,7 +153,13 @@ class MyApp extends StatelessWidget {
               : const PusatAdabAttendanceSession();
         },
 
+        // Tuition Fees (Module 4)
+        '/student-tuition-fees': (ctx) => const StudentTuitionFees(),
+        '/student-pay-tuition': (ctx) => const StudentPayTuitionFees(),
+        '/student-notifications': (ctx) => const StudentNotification(),
+        '/treasury-ledger': (ctx) => const TreasuryStudentLedger(),
+
       },
     );
   }
-}
+}

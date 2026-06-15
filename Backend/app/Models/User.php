@@ -50,4 +50,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(PusatAdab::class, 'User_ID');
     }
+
+    public function treasury()
+    {
+        return $this->hasOne(Treasury::class, 'User_ID');
+    }
 }

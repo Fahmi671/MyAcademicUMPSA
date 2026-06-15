@@ -35,8 +35,16 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            $passwordMatched = Hash::check($request->password, $user->User_Password);
-            $plainTextMatched = !$passwordMatched && hash_equals((string) $user->User_Password, (string) $request->password);
+            $isBcrypt = str_starts_with($user->User_Password, '$2y$');
+            
+            $passwordMatched = false;
+            $plainTextMatched = false;
+
+            if ($isBcrypt) {
+                $passwordMatched = Hash::check($request->password, $user->User_Password);
+            } else {
+                $plainTextMatched = hash_equals((string) $user->User_Password, (string) $request->password);
+            }
 
             if (!$passwordMatched && !$plainTextMatched) {
                 return response()->json([

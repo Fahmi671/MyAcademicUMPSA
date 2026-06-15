@@ -12,6 +12,9 @@ use App\Http\Controllers\ParticipationController;
 use App\Http\Controllers\CreditClaimController;
 use App\Http\Controllers\PusatAdabController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\TuitionFeesController;
+use App\Http\Controllers\TreasuryController;
+use App\Http\Controllers\NotificationController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -21,7 +24,17 @@ use App\Http\Controllers\AttendanceController;
 Route::middleware('throttle:60,1')->group(function () {
     // Public routes (no authentication required)
     Route::post('/auth/login', [AuthController::class, 'login']);
+
+    // ToyyibPay Webhook Callback
+    Route::post('/toyyibpay-callback', [TuitionFeesController::class, 'paymentCallback']);
+    
+    // ToyyibPay Browser Return URL (For Local Testing)
+    Route::get('/toyyibpay-return', [TuitionFeesController::class, 'paymentReturn']);
+    
+    // ToyyibPay Manual Verification
+    Route::post('/toyyibpay-verify', [TuitionFeesController::class, 'verifyPayment']);
 });
+
 
 // Protected routes (authentication required)
 Route::middleware('auth:sanctum')->group(function () {
@@ -80,4 +93,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/student/classes', [AttendanceController::class, 'getStudentClasses']);
     Route::get('/student/activity-attendance', [AttendanceController::class, 'getStudentActivities']);
     Route::post('/attendance/checkin', [AttendanceController::class, 'checkIn']);
+
+    // Tuition Fee routes
+    Route::get('/tuition-fee', [TuitionFeesController::class, 'show']);
+    Route::post('/payment-transaction', [TuitionFeesController::class, 'pay']);
+
+    // Treasury routes
+    Route::get('/treasury/ledger', [TreasuryController::class, 'ledger']);
+    Route::get('/treasury/ledger/search', [TreasuryController::class, 'search']);
+    Route::get('/treasury/ledger/filter', [TreasuryController::class, 'filter']);
+
+    // Notification routes
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/send-tuition-alert', [NotificationController::class, 'sendTuitionAlert']);
 });

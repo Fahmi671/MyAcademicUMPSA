@@ -84,6 +84,8 @@ class _StudentHomepageState extends State<StudentHomepage> {
   String _userName = 'Loading...';
   String _userRole = 'Student';
   bool _isLoadingUser = true;
+  bool _isFeeLoading = true;
+  String _academicAccess = 'Active';
 
   // Lifecycle
   @override
@@ -136,6 +138,23 @@ class _StudentHomepageState extends State<StudentHomepage> {
     } catch (e) {
       print('Error fetching user: $e');
       loadUserFromStorage();
+    }
+    await fetchTuitionFeeStatus();
+  }
+
+  Future<void> fetchTuitionFeeStatus() async {
+    try {
+      final result = await ApiService.getStudentTuitionFee();
+      if (result['success'] && result['data'] != null) {
+        setState(() {
+          _academicAccess = result['data']['Academic_Access'] ?? 'Active';
+          _isFeeLoading = false;
+        });
+      } else {
+        setState(() => _isFeeLoading = false);
+      }
+    } catch (e) {
+      setState(() => _isFeeLoading = false);
     }
   }
 
@@ -346,13 +365,47 @@ class _StudentHomepageState extends State<StudentHomepage> {
             _userRole,
             style: AppTextStyles.welcomeSubtitle,
           ),
+          if (!_isFeeLoading && _academicAccess == 'Restricted')
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.transparent, // the screenshot doesn't have yellow background, just yellow text/icon?
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent, size: 20),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Pay your pending tuition fee to unlock your academic access',
+                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 
   // Menu Section
+  void _handleMenuTap(String route, {bool isLocked = false}) {
+    if (isLocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Academic access restricted. Please pay your tuition fees first.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } else {
+      Navigator.pushNamed(context, route).then((_) => fetchTuitionFeeStatus());
+    }
+  }
+
   Widget buildMenuSection() {
+    final bool isLocked = !_isFeeLoading && _academicAccess == 'Restricted';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -368,25 +421,36 @@ class _StudentHomepageState extends State<StudentHomepage> {
               buildMenuCard(
                 icon: Icons.school,
                 label: 'Subject\nRegistration',
-                onTap: () => Navigator.pushNamed(context, '/student-subject'),
+                isLocked: isLocked,
+                onTap: () => _handleMenuTap('/student-subject', isLocked: isLocked),
               ),
               const SizedBox(width: 12),
               buildMenuCard(
                 icon: Icons.event_note,
                 label: 'Co-Curriculum\nRegistration',
-                onTap: () => Navigator.pushNamed(context, '/student-activities'),
+                isLocked: isLocked,
+                onTap: () => _handleMenuTap('/student-activities', isLocked: isLocked),
               ),
               const SizedBox(width: 12),
               buildMenuCard(
                 icon: Icons.how_to_reg,
                 label: 'Class\nAttendance',
-                onTap: () => Navigator.pushNamed(context, '/student-class-attendance'),
+                isLocked: isLocked,
+                onTap: () => _handleMenuTap('/student-class-attendance', isLocked: isLocked),
               ),
               const SizedBox(width: 12),
               buildMenuCard(
                 icon: Icons.checklist,
                 label: 'Co-Curriculum\nAttendance',
-                onTap: () => Navigator.pushNamed(context, '/student-cocurriculum-attendance'),
+                isLocked: isLocked,
+                onTap: () => _handleMenuTap('/student-cocurriculum-attendance', isLocked: isLocked),
+              ),
+              const SizedBox(width: 12),
+              buildMenuCard(
+                icon: Icons.payment,
+                label: 'Tuition\nFees',
+                isLocked: false,
+                onTap: () => _handleMenuTap('/student-tuition-fees', isLocked: false),
               ),
             ],
           ),
@@ -399,40 +463,58 @@ class _StudentHomepageState extends State<StudentHomepage> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    bool isLocked = false,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 110,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
-        decoration: BoxDecoration(
-          color: AppColors.menuCardBackground,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.menuCardBorder, width: 1),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.menuCardShadow,
-              blurRadius: 4,
-              offset: Offset(0, 2),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 110,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+            decoration: BoxDecoration(
+              color: AppColors.menuCardBackground,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.menuCardBorder, width: 1),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.menuCardShadow,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 32,
-              color: AppColors.appBarBackground,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 32,
+                  color: AppColors.appBarBackground,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.menuItemText,
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.menuItemText,
+          ),
+          if (isLocked)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Center(
+                  child: Icon(Icons.lock, color: Colors.orange, size: 36),
+                ),
+              ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

@@ -30,4 +30,19 @@ class Student extends Model
     {
         return $this->hasMany(SubjectEnrollment::class, 'Student_ID');
     }
+
+    public function tuitionFees()
+    {
+        return $this->hasMany(TuitionFee::class, 'Student_ID', 'Student_ID');
+    }
+
+    public function paymentTransactions()
+    {
+        return $this->hasMany(PaymentTransaction::class, 'Student_ID', 'Student_ID');
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class, 'Student_ID', 'Student_ID');
+    }
 }
