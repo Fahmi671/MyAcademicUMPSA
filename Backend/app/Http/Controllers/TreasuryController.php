@@ -22,7 +22,7 @@ class TreasuryController extends Controller
     public function search(Request $request)
     {
         try {
-            $query = $request->query('query');
+            $query = $request->query('student_id');
             if (empty($query)) {
                 return response()->json(['success' => false, 'message' => 'Search query is required'], 422);
             }

@@ -997,7 +997,7 @@ class ApiService {
   static Future<Map<String, dynamic>> searchTreasuryLedger(String studentId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/treasury/ledger/search?query=$studentId'),
+        Uri.parse('$baseUrl/treasury/ledger/search?student_id=$studentId'),
         headers: getHeaders(),
       );
       return jsonDecode(response.body);
