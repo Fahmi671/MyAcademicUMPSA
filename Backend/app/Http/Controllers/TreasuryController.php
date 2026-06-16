@@ -27,11 +27,14 @@ class TreasuryController extends Controller
                 return response()->json(['success' => false, 'message' => 'Search query is required'], 422);
             }
 
+            // To avoid MySQL collation mismatch errors between tables (utf8mb4_unicode_ci vs utf8mb4_general_ci),
+            // we find matching student IDs in a separate query instead of using whereHas.
+            $userIds = \App\Models\User::where('User_FullName', 'like', '%' . $query . '%')->pluck('User_ID');
+            $studentIds = \App\Models\Student::whereIn('User_ID', $userIds)->pluck('Student_ID');
+
             $results = TuitionFee::with('student.user')
                 ->where('Student_ID', 'like', '%' . $query . '%')
-                ->orWhereHas('student.user', function ($q) use ($query) {
-                    $q->where('User_FullName', 'like', '%' . $query . '%');
-                })
+                ->orWhereIn('Student_ID', $studentIds)
                 ->get();
 
             if ($results->isEmpty()) {
